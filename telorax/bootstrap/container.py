@@ -4,7 +4,9 @@ from dependency_injector import containers, providers
 
 from telorax.application.services.account_service import AccountService
 from telorax.application.services.health_service import HealthService
+from telorax.application.services.mobile_agent_service import MobileAgentService
 from telorax.application.services.operation_service import OperationService
+from telorax.application.services.provisioning_service import ProvisioningService
 from telorax.bootstrap.application import Application
 from telorax.core.config.settings import Settings
 from telorax.infrastructure.database.engine import create_engine, create_session_factory
@@ -41,6 +43,17 @@ class Container(containers.DeclarativeContainer):
     account_service = providers.Singleton(
         AccountService,
         session_factory=session_factory,
+        settings=config,
+    )
+
+    provisioning_service = providers.Singleton(
+        ProvisioningService,
+        session_factory=session_factory,
+        account_service=account_service,
+    )
+
+    mobile_agent_service = providers.Singleton(
+        MobileAgentService,
         settings=config,
     )
 

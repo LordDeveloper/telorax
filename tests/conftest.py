@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -15,8 +15,10 @@ from telorax.application.dto.account import (
 )
 from telorax.application.dto.health import ComponentHealthDTO, HealthReportDTO
 from telorax.application.dto.operation import OperationSummaryDTO
+from telorax.application.dto.mobile_agent import TelegramCapabilitiesDTO
+from telorax.application.dto.provisioning import ProvisioningJobDTO
 from telorax.bootstrap.container import Container
-from telorax.core.enums import AccountState, OperationType
+from telorax.core.enums import AccountState, OperationType, ProvisioningState
 
 
 @pytest.fixture
@@ -104,9 +106,40 @@ def api_client() -> TestClient:
     account_service.import_session = AsyncMock(
         return_value=ImportSessionResultDTO(account=detail, created=True),
     )
+    provisioning_service = AsyncMock()
+    provisioning_service.create_job = AsyncMock(
+        return_value=ProvisioningJobDTO(
+            id=1,
+            msisdn=989121234567,
+            state=ProvisioningState.QUEUED,
+            provider='android-agent',
+            country_iso='IR',
+            first_name='Demo',
+            last_name='User',
+            agent_id=None,
+            account_id=None,
+            failure_reason=None,
+            metadata={},
+            claimed_at=None,
+            completed_at=None,
+            created_at=None,
+            updated_at=None,
+        ),
+    )
+    provisioning_service.list_jobs = AsyncMock(return_value=[])
+    provisioning_service.get_job = AsyncMock(return_value=None)
+    provisioning_service.claim_next_job = AsyncMock(return_value=None)
+    mobile_agent_service = MagicMock()
+    mobile_agent_service.register.return_value = {'device_id': 'android-01', 'status': 'registered'}
+    mobile_agent_service.heartbeat.return_value = {'status': 'ok'}
+    mobile_agent_service.get_config.return_value = MagicMock(to_api_dict=lambda: {})
+    mobile_agent_service.check_update.return_value = MagicMock(to_api_dict=lambda: {})
+    mobile_agent_service.parse_capabilities.return_value = TelegramCapabilitiesDTO()
     container.operation_service.override(operation_service)
     container.health_service.override(health_service)
     container.account_service.override(account_service)
+    container.provisioning_service.override(provisioning_service)
+    container.mobile_agent_service.override(mobile_agent_service)
     app = create_fastapi_app(container)
     return TestClient(app)
 
@@ -119,4 +152,8 @@ def auth_headers() -> dict[str, str]:
     token = base64.b64encode(
         f'{settings.auth_username}:{settings.auth_password.get_secret_value()}'.encode(),
     ).decode()
-    return {'Authorization': f'Basic {token}'}
+    agent_token = settings.signup_agent_token.get_secret_value()
+    return {
+        'Authorization': f'Basic {token}',
+        'X-Telorax-Agent-Token': agent_token,
+    }

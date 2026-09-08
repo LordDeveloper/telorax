@@ -136,3 +136,28 @@ class OperationFailure(Base):
     attempt_count: Mapped[int] = mapped_column(Integer, default=0)
     snapshot: Mapped[dict[str, Any] | None] = mapped_column(JSON)
     failed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ProvisioningJob(Base):
+    __tablename__ = 'provisioning_jobs'
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    msisdn: Mapped[int] = mapped_column(BigInteger, nullable=False, index=True)
+    state: Mapped[int] = mapped_column(Integer, default=1, index=True)
+    provider: Mapped[str] = mapped_column(String(64), default='android-agent', index=True)
+    country_iso: Mapped[str | None] = mapped_column(String(3))
+    first_name: Mapped[str] = mapped_column(String(64), nullable=False)
+    last_name: Mapped[str] = mapped_column(String(64), nullable=False)
+    two_factor_password: Mapped[str | None] = mapped_column(String(255))
+    agent_id: Mapped[str | None] = mapped_column(String(128), index=True)
+    account_id: Mapped[int | None] = mapped_column(BigInteger, index=True)
+    failure_reason: Mapped[str | None] = mapped_column(Text)
+    metadata_json: Mapped[dict[str, Any] | None] = mapped_column(JSON)
+    claimed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+    )

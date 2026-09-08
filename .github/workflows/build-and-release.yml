@@ -82,6 +82,47 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
+  android-agent:
+    name: Android Agent
+    if: ${{ github.event_name == 'pull_request' || !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Go tests
+        working-directory: android-agent
+        run: go test ./...
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build debug APK
+        working-directory: android-agent/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --stacktrace
+
+      - name: Upload APK
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: telorax-android-apk
+          path: android-agent/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 1
+
   prepare-release:
     name: prepare-release
     needs: building
@@ -197,7 +238,7 @@ jobs:
 
   releasing:
     name: Releasing new version
-    needs: [prepare-release, package]
+    needs: [prepare-release, package, android-agent]
     if: >-
       ${{
         github.event_name == 'push'
@@ -226,6 +267,12 @@ jobs:
           merge-multiple: true
           path: release-assets
 
+      - name: Download Android APK
+        uses: actions/download-artifact@v4
+        with:
+          name: telorax-android-apk
+          path: release-assets
+
       - name: Sync project version
         run: |
           VERSION='${{ needs.prepare-release.outputs.version }}'
@@ -250,9 +297,10 @@ jobs:
           cp scripts/upgrade.sh release-assets/
           cp scripts/deps.sh release-assets/
           cp scripts/release-name.sh release-assets/
+          mv release-assets/app-debug.apk "release-assets/telorax-agent.${VERSION}-android-debug.apk"
           (
             cd release-assets
-            sha256sum "${RELEASE_REPO_NAME}.${VERSION}-"* > SHA256SUMS
+            sha256sum "${RELEASE_REPO_NAME}.${VERSION}-"* telorax-agent.${VERSION}-android-debug.apk > SHA256SUMS
           )
           ls -lh release-assets/
 
@@ -288,12 +336,14 @@ jobs:
             | RHEL / Fedora / Amazon Linux | amd64 | `telorax.*-amd64.rpm` |
             | RHEL / Fedora / Amazon Linux | arm64 | `telorax.*-arm64.rpm` |
             | Any Linux (Python 3.11+) | any | `telorax.*-any.whl` |
+            | Android agent (debug) | android | `telorax-agent.*-android-debug.apk` |
           files: |
             release-assets/telorax.*-any.whl
             release-assets/telorax.*-amd64.deb
             release-assets/telorax.*-arm64.deb
             release-assets/telorax.*-amd64.rpm
             release-assets/telorax.*-arm64.rpm
+            release-assets/telorax-agent.*-android-debug.apk
             release-assets/SHA256SUMS
             release-assets/install.sh
             release-assets/upgrade.sh

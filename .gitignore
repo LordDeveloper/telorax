@@ -12,3 +12,7 @@ htmlcov/
 docs/node_modules/
 docs/dist/
 docs/*.tsbuildinfo
+android-agent/android/.gradle/
+android-agent/android/**/build/
+android-agent/android/local.properties
+android-agent/android/.idea/

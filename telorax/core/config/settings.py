@@ -49,6 +49,25 @@ class Settings(BaseSettings):
     # Auth
     auth_username: str = 'telorax'
     auth_password: SecretStr = SecretStr('changeme')
+    signup_agent_token: SecretStr = SecretStr('changeme')
+    signup_agent_poll_seconds: int = 5
+
+    # Mobile Android agent + WireGuard
+    mobile_agent_poll_seconds: int = 15
+    mobile_agent_latest_version: str = '0.1.0'
+    mobile_agent_update_url: str = ''
+    mobile_agent_update_sha256: str = ''
+    mobile_agent_update_mandatory: bool = False
+    mobile_agent_update_notes: str = ''
+    wireguard_enabled: bool = False
+    wireguard_interface_name: str = 'telorax0'
+    wireguard_endpoint: str = ''
+    wireguard_server_public_key: str = ''
+    wireguard_client_private_key: SecretStr | None = None
+    wireguard_client_address_template: str = '10.8.0.{octet}/32'
+    wireguard_client_address_octet: int = 22
+    wireguard_allowed_ips: str = '10.8.0.0/24'
+    wireguard_dns: str = '1.1.1.1'
 
     # Database
     db_connection: str = 'mysql'

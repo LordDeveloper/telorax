@@ -7,6 +7,7 @@ from telorax.infrastructure.database.models.base import (
     Operation,
     OperationFailure,
     PeerSnapshot,
+    ProvisioningJob,
 )
 
 __all__ = [
@@ -18,4 +19,5 @@ __all__ = [
     'Operation',
     'OperationFailure',
     'PeerSnapshot',
+    'ProvisioningJob',
 ]

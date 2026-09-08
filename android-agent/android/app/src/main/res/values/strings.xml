@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Telorax Agent</string>
+    <string name="accessibility_service_description">
+        Allows Telorax to observe and automate the official Telegram app for account provisioning.
+    </string>
+</resources>

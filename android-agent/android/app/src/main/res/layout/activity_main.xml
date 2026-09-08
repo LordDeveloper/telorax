@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <EditText
+        android:id="@+id/baseUrlInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Telorax base URL (via WireGuard)" />
+
+    <EditText
+        android:id="@+id/agentIdInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Agent ID" />
+
+    <EditText
+        android:id="@+id/agentTokenInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Agent token"
+        android:inputType="textPassword" />
+
+    <Button
+        android:id="@+id/saveButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Save" />
+
+    <Button
+        android:id="@+id/accessibilityButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Open Accessibility Settings" />
+
+    <Button
+        android:id="@+id/bootstrapButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Connect to Server" />
+
+    <Button
+        android:id="@+id/updateButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Check In-App Update" />
+
+    <TextView
+        android:id="@+id/statusText"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:text="Phase 1: server link, WireGuard, Telegram permissions"
+        android:textIsSelectable="true" />
+</LinearLayout>

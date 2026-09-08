@@ -10,7 +10,10 @@ from fastapi.staticfiles import StaticFiles
 
 from telorax import __version__
 from telorax.api.routes.v1.accounts import router as accounts_router
+from telorax.api.routes.v1.mobile_agent import router as mobile_agent_router
 from telorax.api.routes.v1.operations import router as operations_router
+from telorax.api.routes.v1.provisioning import agent_router as provisioning_agent_router
+from telorax.api.routes.v1.provisioning import router as provisioning_router
 from telorax.api.routes.v1.status import router as status_router
 
 if TYPE_CHECKING:
@@ -43,6 +46,9 @@ def create_fastapi_app(container: Container) -> FastAPI:
     app.include_router(status_router, prefix='/v1', tags=['status'])
     app.include_router(operations_router, prefix='/v1')
     app.include_router(accounts_router, prefix='/v1')
+    app.include_router(provisioning_router, prefix='/v1')
+    app.include_router(provisioning_agent_router, prefix='/v1')
+    app.include_router(mobile_agent_router, prefix='/v1')
 
     docs_dir = _resolve_docs_dir()
     if docs_dir is not None:

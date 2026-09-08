@@ -6,7 +6,9 @@ from fastapi import Request
 
 from telorax.application.services.account_service import AccountService
 from telorax.application.services.health_service import HealthService
+from telorax.application.services.mobile_agent_service import MobileAgentService
 from telorax.application.services.operation_service import OperationService
+from telorax.application.services.provisioning_service import ProvisioningService
 from telorax.bootstrap.container import Container
 
 
@@ -23,3 +25,13 @@ def get_operation_service(request: Request) -> OperationService:
 def get_account_service(request: Request) -> AccountService:
     container = cast('Container', request.app.state.container)
     return container.account_service()
+
+
+def get_provisioning_service(request: Request) -> ProvisioningService:
+    container = cast('Container', request.app.state.container)
+    return container.provisioning_service()
+
+
+def get_mobile_agent_service(request: Request) -> MobileAgentService:
+    container = cast('Container', request.app.state.container)
+    return container.mobile_agent_service()

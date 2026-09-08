@@ -9,6 +9,9 @@ from telorax.infrastructure.database.repositories.sqlalchemy_dispatch import (
 from telorax.infrastructure.database.repositories.sqlalchemy_membership import (
     SQLAlchemyMembershipRepository,
 )
+from telorax.infrastructure.database.repositories.sqlalchemy_provisioning import (
+    SQLAlchemyProvisioningJobRepository,
+)
 from telorax.infrastructure.database.repositories.sqlalchemy_repositories import (
     SQLAlchemyAccountRepository,
     SQLAlchemyOperationRepository,
@@ -26,6 +29,7 @@ class SQLAlchemyUnitOfWork(UnitOfWork):
         self._operations: SQLAlchemyOperationRepository | None = None
         self._memberships: SQLAlchemyMembershipRepository | None = None
         self._dispatches: SQLAlchemyDispatchRepository | None = None
+        self._provisioning_jobs: SQLAlchemyProvisioningJobRepository | None = None
 
     async def __aenter__(self) -> SQLAlchemyUnitOfWork:
         self._session = self._session_factory()
@@ -34,6 +38,7 @@ class SQLAlchemyUnitOfWork(UnitOfWork):
         self._operations = SQLAlchemyOperationRepository(self._session)
         self._memberships = SQLAlchemyMembershipRepository(self._session)
         self._dispatches = SQLAlchemyDispatchRepository(self._session)
+        self._provisioning_jobs = SQLAlchemyProvisioningJobRepository(self._session)
         return self
 
     async def __aexit__(self, *args: object) -> None:
@@ -75,3 +80,17 @@ class SQLAlchemyUnitOfWork(UnitOfWork):
             msg = 'UnitOfWork not entered: dispatches'
             raise RuntimeError(msg)
         return self._dispatches
+
+    @property
+    def provisioning_jobs(self) -> SQLAlchemyProvisioningJobRepository:
+        if self._provisioning_jobs is None:
+            msg = 'UnitOfWork not entered: provisioning_jobs'
+            raise RuntimeError(msg)
+        return self._provisioning_jobs
+
+    @property
+    def provisioning_jobs(self) -> SQLAlchemyProvisioningJobRepository:
+        if self._provisioning_jobs is None:
+            msg = 'UnitOfWork not entered: provisioning_jobs'
+            raise RuntimeError(msg)
+        return self._provisioning_jobs
