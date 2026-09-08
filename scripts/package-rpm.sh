@@ -35,6 +35,8 @@ cp packaging/telorax-redis.service "${ROOT}/lib/systemd/system/telorax-redis.ser
 cp packaging/telorax-mariadb.service "${ROOT}/lib/systemd/system/telorax-mariadb.service"
 cp packaging/env.example "${ROOT}/etc/telorax/env.example"
 cp scripts/deps.sh "${ROOT}/usr/share/telorax/deps.sh"
+cp alembic.ini "${ROOT}/usr/share/telorax/alembic.ini"
+cp -r migrations "${ROOT}/usr/share/telorax/migrations"
 cp packaging/telorax-redis.service "${ROOT}/usr/share/telorax/telorax-redis.service"
 cp packaging/telorax-mariadb.service "${ROOT}/usr/share/telorax/telorax-mariadb.service"
 chmod 755 "${ROOT}/usr/share/telorax/deps.sh"

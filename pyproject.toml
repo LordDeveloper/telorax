@@ -15,7 +15,6 @@ dependencies = [
     'pydantic>=2.10.0,<3.0',
     'pydantic-settings>=2.6.0,<3.0',
     'typer>=0.27.0,<0.28.0',
-    'textual>=8.2.0,<9.0',
     'rich>=13.9.0,<16.0',
     'dependency-injector>=4.42.0,<5.0',
     'structlog>=24.4.0,<27.0',
@@ -62,6 +61,11 @@ select = ['E', 'F', 'W', 'I', 'N', 'UP', 'B', 'A', 'COM', 'C4', 'DTZ', 'T20', 'I
 'telorax/application/validators/**' = ['TC001']
 'telorax/application/services/account_service.py' = ['TC001']
 'telorax/bootstrap/application.py' = ['PLC0415']
+'telorax/cli/console.py' = ['T201', 'PLC0415', 'PLR0911', 'PLR0912', 'TC003', 'SIM105']
+'telorax/cli/menu.py' = ['T201', 'PLR0912', 'PLR2004', 'E501']
+'telorax/cli/actions.py' = ['T201', 'PLC0415', 'TC001']
+'telorax/cli/app.py' = ['PLC0415']
+'telorax/cli/commands/migrate.py' = ['PLC0415']
 'telorax/infrastructure/database/models/*' = ['TC003']
 
 [tool.ruff.lint.mccabe]
@@ -82,7 +86,9 @@ plugins = ['pydantic.mypy']
 source = ['telorax']
 branch = true
 omit = [
-    'telorax/cli/tui/*',
+    'telorax/cli/console.py',
+    'telorax/cli/menu.py',
+    'telorax/cli/actions.py',
     'telorax/worker/*',
     'telorax/bootstrap/application.py',
     'telorax/infrastructure/database/models/*',
