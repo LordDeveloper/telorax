@@ -1,5 +1,6 @@
 import contextlib
 import os
+import sys
 from http import HTTPStatus
 from pathlib import Path
 
@@ -30,12 +31,12 @@ def init_config() -> None:
     env_path.write_text(content, encoding='utf-8')
     with contextlib.suppress(OSError):
         env_path.chmod(0o600)
-    if os.name != 'nt':
+    if sys.platform != 'win32':
         with contextlib.suppress(OSError):
             import pwd
 
-            account = pwd.getpwnam('telorax')  # type: ignore[attr-defined]
-            os.chown(env_path, account.pw_uid, account.pw_gid)  # type: ignore[attr-defined]
+            account = pwd.getpwnam('telorax')
+            os.chown(env_path, account.pw_uid, account.pw_gid)
     typer.echo(f'Created config: {env_path}')
 
 
