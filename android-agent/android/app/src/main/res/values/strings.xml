@@ -1,7 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Telorax Agent</string>
+    <string name="subtitle">Secure tunnel · Server sync · Telegram provisioning</string>
     <string name="accessibility_service_description">
         Allows Telorax to observe and automate the official Telegram app for account provisioning.
     </string>
+    <string name="status_title">System status</string>
+    <string name="status_vpn_off">VPN: disconnected</string>
+    <string name="status_vpn_on">VPN: connected</string>
+    <string name="status_server_unknown">Server: not connected</string>
+    <string name="status_server_ok">Server: online</string>
+    <string name="status_telegram_unknown">Telegram: checking…</string>
+    <string name="status_telegram_ready">Telegram: ready</string>
+    <string name="status_telegram_missing">Telegram: app not installed</string>
+    <string name="status_profile_none">Amnezia profile: none</string>
+    <string name="step_vpn_title">STEP 1 · AMNEZIA VPN</string>
+    <string name="step_vpn_desc">Import your Amnezia .vpn config to reach the Telorax server through a secure tunnel.</string>
+    <string name="import_amnezia_file">Import .vpn file</string>
+    <string name="import_amnezia_clipboard">Paste from clipboard</string>
+    <string name="open_amnezia">Open Amnezia VPN</string>
+    <string name="step_server_title">STEP 2 · SERVER API</string>
+    <string name="public_url_hint">Public server URL (before VPN)</string>
+    <string name="vpn_url_hint">Internal API URL (via VPN)</string>
+    <string name="agent_id_hint">Agent ID</string>
+    <string name="agent_token_hint">Agent token</string>
+    <string name="save_settings">Save credentials</string>
+    <string name="connect_server">Register &amp; sync</string>
+    <string name="step_telegram_title">STEP 3 · TELEGRAM</string>
+    <string name="open_accessibility">Enable accessibility service</string>
+    <string name="open_telegram">Open Telegram</string>
+    <string name="start_provisioning">Start signup worker</string>
+    <string name="stop_provisioning">Stop signup worker</string>
+    <string name="check_update">Check in-app update</string>
+    <string name="log_placeholder">Activity log…</string>
 </resources>
