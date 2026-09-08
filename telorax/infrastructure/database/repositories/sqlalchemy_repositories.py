@@ -8,38 +8,38 @@ from sqlalchemy import or_, select
 from telorax.core.enums import AccountState, OperationState, OperationType
 from telorax.domain.entities import Account, Operation
 from telorax.domain.interfaces.repositories import AccountRepository, OperationRepository
-from telorax.infrastructure.database.models import AccountModel, OperationModel
+from telorax.infrastructure.database import models as schema
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
 
-def _to_account(model: AccountModel) -> Account:
+def _to_account(row: schema.Account) -> Account:
     return Account(
-        id=model.id,
-        msisdn=model.msisdn,
-        session_ciphertext=model.session_ciphertext,
-        state=AccountState(model.state),
-        country_iso=model.country_iso,
-        telegram_user_id=model.telegram_user_id,
-        telegram_username=model.telegram_username,
-        display_name=model.display_name,
-        telegram_app_id=model.telegram_app_id,
-        telegram_app_hash=model.telegram_app_hash,
-        two_factor_secret=model.two_factor_secret,
-        reliability_score=model.reliability_score,
-        rate_limited_until=model.rate_limited_until,
-        restricted_until=model.restricted_until,
-        last_online_at=model.last_online_at,
-        two_factor_confirmed_at=model.two_factor_confirmed_at,
-        foreign_sessions_revoked_at=model.foreign_sessions_revoked_at,
-        last_engaged_at=model.last_engaged_at,
-        account_ttl_configured=model.account_ttl_configured,
-        proxy_label=model.proxy_label,
-        notes=model.notes,
-        provisioned_at=model.provisioned_at,
-        created_at=model.created_at,
-        updated_at=model.updated_at,
+        id=row.id,
+        msisdn=row.msisdn,
+        session_ciphertext=row.session_ciphertext,
+        state=AccountState(row.state),
+        country_iso=row.country_iso,
+        telegram_user_id=row.telegram_user_id,
+        telegram_username=row.telegram_username,
+        display_name=row.display_name,
+        telegram_app_id=row.telegram_app_id,
+        telegram_app_hash=row.telegram_app_hash,
+        two_factor_secret=row.two_factor_secret,
+        reliability_score=row.reliability_score,
+        rate_limited_until=row.rate_limited_until,
+        restricted_until=row.restricted_until,
+        last_online_at=row.last_online_at,
+        two_factor_confirmed_at=row.two_factor_confirmed_at,
+        foreign_sessions_revoked_at=row.foreign_sessions_revoked_at,
+        last_engaged_at=row.last_engaged_at,
+        account_ttl_configured=row.account_ttl_configured,
+        proxy_label=row.proxy_label,
+        notes=row.notes,
+        provisioned_at=row.provisioned_at,
+        created_at=row.created_at,
+        updated_at=row.updated_at,
     )
 
 
@@ -51,24 +51,24 @@ def _parse_target(target: str) -> str | int:
     return int(target) if target.isdigit() else target
 
 
-def _to_operation(model: OperationModel) -> Operation:
+def _to_operation(row: schema.Operation) -> Operation:
     return Operation(
-        id=model.id,
-        type=OperationType(model.operation_type),
-        quantity=model.quantity,
-        completed=model.completed,
-        target=_parse_target(model.target),
-        extra=model.extra or {},
-        state=OperationState(model.state),
-        fingerprint=model.fingerprint,
-        retry_attempts=model.retry_attempts,
-        country=model.country,
-        failure_summary=model.failure_summary,
-        scheduled_at=model.scheduled_at,
-        started_at=model.started_at,
-        finished_at=model.finished_at,
-        created_at=model.created_at,
-        updated_at=model.updated_at,
+        id=row.id,
+        type=OperationType(row.operation_type),
+        quantity=row.quantity,
+        completed=row.completed,
+        target=_parse_target(row.target),
+        extra=row.extra or {},
+        state=OperationState(row.state),
+        fingerprint=row.fingerprint,
+        retry_attempts=row.retry_attempts,
+        country=row.country,
+        failure_summary=row.failure_summary,
+        scheduled_at=row.scheduled_at,
+        started_at=row.started_at,
+        finished_at=row.finished_at,
+        created_at=row.created_at,
+        updated_at=row.updated_at,
     )
 
 
@@ -77,15 +77,15 @@ class SQLAlchemyAccountRepository(AccountRepository):
         self._session = session
 
     async def get_by_id(self, account_id: int) -> Account | None:
-        model = await self._session.get(AccountModel, account_id)
-        return _to_account(model) if model else None
+        row = await self._session.get(schema.Account, account_id)
+        return _to_account(row) if row else None
 
     async def get_by_msisdn(self, msisdn: int) -> Account | None:
         result = await self._session.execute(
-            select(AccountModel).where(AccountModel.msisdn == msisdn),
+            select(schema.Account).where(schema.Account.msisdn == msisdn),
         )
-        model = result.scalar_one_or_none()
-        return _to_account(model) if model else None
+        row = result.scalar_one_or_none()
+        return _to_account(row) if row else None
 
     async def list_operational(
         self,
@@ -95,34 +95,34 @@ class SQLAlchemyAccountRepository(AccountRepository):
     ) -> list[Account]:
         now = datetime.now(tz=UTC)
         query = (
-            select(AccountModel)
-            .where(AccountModel.state == AccountState.ACTIVE.value)
+            select(schema.Account)
+            .where(schema.Account.state == AccountState.ACTIVE.value)
             .where(
                 or_(
-                    AccountModel.rate_limited_until.is_(None),
-                    AccountModel.rate_limited_until < now,
+                    schema.Account.rate_limited_until.is_(None),
+                    schema.Account.rate_limited_until < now,
                 ),
             )
-            .order_by(AccountModel.reliability_score.desc())
+            .order_by(schema.Account.reliability_score.desc())
             .limit(limit)
         )
         if country_iso:
-            query = query.where(AccountModel.country_iso == country_iso)
+            query = query.where(schema.Account.country_iso == country_iso)
         result = await self._session.execute(query)
-        return [_to_account(model) for model in result.scalars()]
+        return [_to_account(row) for row in result.scalars()]
 
     async def update_state(self, account_id: int, state: AccountState) -> None:
-        model = await self._session.get(AccountModel, account_id)
-        if model:
-            model.state = state.value
+        row = await self._session.get(schema.Account, account_id)
+        if row:
+            row.state = state.value
 
     async def update_reliability_score(self, account_id: int, score: int) -> None:
-        model = await self._session.get(AccountModel, account_id)
-        if model:
-            model.reliability_score = score
+        row = await self._session.get(schema.Account, account_id)
+        if row:
+            row.reliability_score = score
 
     async def create(self, account: Account) -> Account:
-        model = AccountModel(
+        row = schema.Account(
             msisdn=account.msisdn,
             session_ciphertext=account.session_ciphertext,
             state=account.state.value,
@@ -137,9 +137,9 @@ class SQLAlchemyAccountRepository(AccountRepository):
             proxy_label=account.proxy_label,
             notes=account.notes,
         )
-        self._session.add(model)
+        self._session.add(row)
         await self._session.flush()
-        return _to_account(model)
+        return _to_account(row)
 
 
 class SQLAlchemyOperationRepository(OperationRepository):
@@ -147,20 +147,20 @@ class SQLAlchemyOperationRepository(OperationRepository):
         self._session = session
 
     async def get_by_id(self, operation_id: int) -> Operation | None:
-        model = await self._session.get(OperationModel, operation_id)
-        return _to_operation(model) if model else None
+        row = await self._session.get(schema.Operation, operation_id)
+        return _to_operation(row) if row else None
 
     async def list_queued(self, *, limit: int) -> list[Operation]:
         result = await self._session.execute(
-            select(OperationModel)
-            .where(OperationModel.state == OperationState.QUEUED.value)
-            .order_by(OperationModel.id.asc())
+            select(schema.Operation)
+            .where(schema.Operation.state == OperationState.QUEUED.value)
+            .order_by(schema.Operation.id.asc())
             .limit(limit),
         )
-        return [_to_operation(model) for model in result.scalars()]
+        return [_to_operation(row) for row in result.scalars()]
 
     async def create(self, operation: Operation) -> Operation:
-        model = OperationModel(
+        row = schema.Operation(
             operation_type=operation.type.value,
             quantity=operation.quantity,
             completed=operation.completed,
@@ -170,9 +170,9 @@ class SQLAlchemyOperationRepository(OperationRepository):
             fingerprint=operation.fingerprint,
             country=operation.country,
         )
-        self._session.add(model)
+        self._session.add(row)
         await self._session.flush()
-        return _to_operation(model)
+        return _to_operation(row)
 
     async def update_fulfillment(
         self,
@@ -181,7 +181,7 @@ class SQLAlchemyOperationRepository(OperationRepository):
         completed: int,
         state: OperationState,
     ) -> None:
-        model = await self._session.get(OperationModel, operation_id)
-        if model:
-            model.completed = completed
-            model.state = state.value
+        row = await self._session.get(schema.Operation, operation_id)
+        if row:
+            row.completed = completed
+            row.state = state.value

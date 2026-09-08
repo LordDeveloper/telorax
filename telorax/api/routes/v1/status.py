@@ -1,17 +1,20 @@
 from __future__ import annotations
 
 from dataclasses import asdict
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
-from telorax.api.dependencies import HealthServiceDep
+from telorax.api.dependencies import get_health_service
+from telorax.application.services.health_service import HealthService
 
 router = APIRouter()
 
 
 @router.get('/status')
-async def get_status(health_service: HealthServiceDep) -> dict[str, Any]:
+async def get_status(
+    health_service: Annotated[HealthService, Depends(get_health_service)],
+) -> dict[str, Any]:
     report = await health_service.get_health_report()
     return {
         'version': report.version,
@@ -21,6 +24,8 @@ async def get_status(health_service: HealthServiceDep) -> dict[str, Any]:
 
 
 @router.get('/health')
-async def health_check(health_service: HealthServiceDep) -> dict[str, str]:
+async def health_check(
+    health_service: Annotated[HealthService, Depends(get_health_service)],
+) -> dict[str, str]:
     report = await health_service.get_health_report()
     return {'status': report.status}

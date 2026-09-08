@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 
 @dataclass(slots=True)
-class OperationDispatch:
+class Dispatch:
     """Record that an account executed an operation (dedup + audit)."""
 
     operation_id: int

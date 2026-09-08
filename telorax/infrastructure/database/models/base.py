@@ -12,7 +12,7 @@ class Base(DeclarativeBase):
     pass
 
 
-class AccountModel(Base):
+class Account(Base):
     __tablename__ = 'accounts'
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
@@ -45,7 +45,7 @@ class AccountModel(Base):
     )
 
 
-class OperationModel(Base):
+class Operation(Base):
     __tablename__ = 'operations'
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
@@ -70,8 +70,8 @@ class OperationModel(Base):
     )
 
 
-class OperationDispatchModel(Base):
-    __tablename__ = 'operation_dispatches'
+class Dispatch(Base):
+    __tablename__ = 'dispatches'
 
     operation_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     account_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
@@ -83,7 +83,7 @@ class OperationDispatchModel(Base):
     )
 
 
-class MembershipModel(Base):
+class Membership(Base):
     __tablename__ = 'memberships'
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
@@ -106,7 +106,7 @@ class MembershipModel(Base):
     )
 
 
-class PeerSnapshotModel(Base):
+class PeerSnapshot(Base):
     __tablename__ = 'peer_snapshots'
 
     telegram_peer_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
@@ -116,7 +116,7 @@ class PeerSnapshotModel(Base):
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
-class AccountPeerBindingModel(Base):
+class AccountPeerBinding(Base):
     __tablename__ = 'account_peer_bindings'
 
     account_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
@@ -125,7 +125,7 @@ class AccountPeerBindingModel(Base):
     bound_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
-class OperationFailureModel(Base):
+class OperationFailure(Base):
     __tablename__ = 'operation_failures'
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)

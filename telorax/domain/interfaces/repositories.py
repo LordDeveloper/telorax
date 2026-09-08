@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Protocol
 
 if TYPE_CHECKING:
     from telorax.core.enums import AccountState, OperationState
-    from telorax.domain.entities import Account, Membership, Operation, OperationDispatch
+    from telorax.domain.entities import Account, Dispatch, Membership, Operation
 
 
 class AccountRepository(Protocol):
@@ -48,10 +48,10 @@ class MembershipRepository(Protocol):
     async def list_due_for_unsubscribe(self, *, limit: int) -> list[Membership]: ...
 
 
-class OperationDispatchRepository(Protocol):
+class DispatchRepository(Protocol):
     async def exists(self, operation_id: int, account_id: int) -> bool: ...
 
-    async def record(self, dispatch: OperationDispatch) -> None: ...
+    async def record(self, dispatch: Dispatch) -> None: ...
 
 
 class UnitOfWork(Protocol):
@@ -73,4 +73,4 @@ class UnitOfWork(Protocol):
     def memberships(self) -> MembershipRepository: ...
 
     @property
-    def operation_dispatches(self) -> OperationDispatchRepository: ...
+    def dispatches(self) -> DispatchRepository: ...

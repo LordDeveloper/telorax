@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
-from telorax.api.dependencies import OperationServiceDep
+from telorax.api.dependencies import get_operation_service
 from telorax.application.dto.operation import CreateOperationDTO, OperationSummaryDTO
+from telorax.application.services.operation_service import OperationService
 from telorax.core.enums import OperationType
 from telorax.core.exceptions import OperationValidationError
 
@@ -29,7 +30,7 @@ def _serialize_summary(operation: OperationSummaryDTO) -> dict[str, Any]:
 
 @router.get('/queued')
 async def list_queued_operations(
-    operation_service: OperationServiceDep,
+    operation_service: Annotated[OperationService, Depends(get_operation_service)],
     limit: int = Query(default=50, ge=1, le=500),
 ) -> list[dict[str, Any]]:
     operations = await operation_service.list_queued(limit=limit)
@@ -39,7 +40,7 @@ async def list_queued_operations(
 @router.get('/{operation_id}')
 async def get_operation(
     operation_id: int,
-    operation_service: OperationServiceDep,
+    operation_service: Annotated[OperationService, Depends(get_operation_service)],
 ) -> dict[str, Any]:
     operation = await operation_service.get_operation(operation_id)
     if operation is None:
@@ -50,7 +51,7 @@ async def get_operation(
 @router.post('', status_code=201)
 async def create_operation(
     payload: dict[str, Any],
-    operation_service: OperationServiceDep,
+    operation_service: Annotated[OperationService, Depends(get_operation_service)],
 ) -> dict[str, Any]:
     dto = CreateOperationDTO(
         type=_parse_operation_type(payload['type']),

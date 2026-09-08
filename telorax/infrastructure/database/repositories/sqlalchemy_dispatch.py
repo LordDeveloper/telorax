@@ -4,31 +4,31 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import select
 
-from telorax.domain.interfaces.repositories import OperationDispatchRepository
-from telorax.infrastructure.database.models import OperationDispatchModel
+from telorax.domain.interfaces.repositories import DispatchRepository
+from telorax.infrastructure.database import models as schema
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
-    from telorax.domain.entities import OperationDispatch
+    from telorax.domain.entities import Dispatch
 
 
-class SQLAlchemyOperationDispatchRepository(OperationDispatchRepository):
+class SQLAlchemyDispatchRepository(DispatchRepository):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
     async def exists(self, operation_id: int, account_id: int) -> bool:
         result = await self._session.execute(
-            select(OperationDispatchModel).where(
-                OperationDispatchModel.operation_id == operation_id,
-                OperationDispatchModel.account_id == account_id,
+            select(schema.Dispatch).where(
+                schema.Dispatch.operation_id == operation_id,
+                schema.Dispatch.account_id == account_id,
             ),
         )
         return result.scalar_one_or_none() is not None
 
-    async def record(self, dispatch: OperationDispatch) -> None:
+    async def record(self, dispatch: Dispatch) -> None:
         self._session.add(
-            OperationDispatchModel(
+            schema.Dispatch(
                 operation_id=dispatch.operation_id,
                 account_id=dispatch.account_id,
                 outcome=dispatch.outcome.value,

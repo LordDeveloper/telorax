@@ -3,11 +3,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from telorax.domain.interfaces.repositories import UnitOfWork
+from telorax.infrastructure.database.repositories.sqlalchemy_dispatch import (
+    SQLAlchemyDispatchRepository,
+)
 from telorax.infrastructure.database.repositories.sqlalchemy_membership import (
     SQLAlchemyMembershipRepository,
-)
-from telorax.infrastructure.database.repositories.sqlalchemy_operation_dispatch import (
-    SQLAlchemyOperationDispatchRepository,
 )
 from telorax.infrastructure.database.repositories.sqlalchemy_repositories import (
     SQLAlchemyAccountRepository,
@@ -25,7 +25,7 @@ class SQLAlchemyUnitOfWork(UnitOfWork):
         self._accounts: SQLAlchemyAccountRepository | None = None
         self._operations: SQLAlchemyOperationRepository | None = None
         self._memberships: SQLAlchemyMembershipRepository | None = None
-        self._dispatches: SQLAlchemyOperationDispatchRepository | None = None
+        self._dispatches: SQLAlchemyDispatchRepository | None = None
 
     async def __aenter__(self) -> SQLAlchemyUnitOfWork:
         self._session = self._session_factory()
@@ -33,7 +33,7 @@ class SQLAlchemyUnitOfWork(UnitOfWork):
         self._accounts = SQLAlchemyAccountRepository(self._session)
         self._operations = SQLAlchemyOperationRepository(self._session)
         self._memberships = SQLAlchemyMembershipRepository(self._session)
-        self._dispatches = SQLAlchemyOperationDispatchRepository(self._session)
+        self._dispatches = SQLAlchemyDispatchRepository(self._session)
         return self
 
     async def __aexit__(self, *args: object) -> None:
@@ -70,8 +70,8 @@ class SQLAlchemyUnitOfWork(UnitOfWork):
         return self._memberships
 
     @property
-    def operation_dispatches(self) -> SQLAlchemyOperationDispatchRepository:
+    def dispatches(self) -> SQLAlchemyDispatchRepository:
         if self._dispatches is None:
-            msg = 'UnitOfWork not entered: operation_dispatches'
+            msg = 'UnitOfWork not entered: dispatches'
             raise RuntimeError(msg)
         return self._dispatches
