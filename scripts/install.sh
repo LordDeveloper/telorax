@@ -5,55 +5,120 @@ REPO="${INSTALL_REPO:-LordDeveloper/telorax}"
 ARCH="${INSTALL_ARCH:-amd64}"
 CONFIG_DIR="${CONFIG_DIR:-/etc/telorax}"
 ENV_FILE="${CONFIG_DIR}/.env"
+SKIP_DEPS="${INSTALL_SKIP_DEPS:-0}"
 
-if [[ "$(id -u)" -ne 0 ]]; then
-  echo 'This installer must run as root. Use: curl ... | sudo bash' >&2
-  exit 1
+SCRIPT_PATH="${BASH_SOURCE[0]:-}"
+if [[ -n "${SCRIPT_PATH}" && "${SCRIPT_PATH}" != bash && -f "${SCRIPT_PATH}" ]]; then
+  SCRIPT_DIR="$(cd "$(dirname "${SCRIPT_PATH}")" && pwd)"
+else
+  SCRIPT_DIR=""
 fi
 
-if [[ "$(uname -s)" != 'Linux' ]]; then
-  echo 'Telorax releases are currently built for Linux only.' >&2
-  exit 1
-fi
+_usage() {
+  cat <<'EOF'
+Telorax installer
 
-if [[ "$(uname -m)" != 'x86_64' ]]; then
-  echo "Unsupported architecture: $(uname -m). Only amd64 is supported." >&2
-  exit 1
-fi
+Usage:
+  install.sh [install] [--skip-deps]
+  install.sh deps install|status|start|stop|restart|provision
 
-echo "Fetching latest release from github.com/${REPO} ..."
-TAG=$(
+Examples:
+  curl -fsSL .../install.sh | sudo bash
+  curl -fsSL .../install.sh | sudo bash -s -- deps status
+  INSTALL_SKIP_DEPS=1 curl -fsSL .../install.sh | sudo bash
+EOF
+}
+
+_source_deps() {
+  if [[ -n "${TELORAX_DEPS_SCRIPT:-}" && -f "${TELORAX_DEPS_SCRIPT}" ]]; then
+    # shellcheck source=/dev/null
+    source "${TELORAX_DEPS_SCRIPT}"
+    return
+  fi
+
+  if [[ -n "${SCRIPT_DIR}" && -f "${SCRIPT_DIR}/deps.sh" ]]; then
+    # shellcheck source=/dev/null
+    source "${SCRIPT_DIR}/deps.sh"
+    return
+  fi
+
+  if [[ -f /usr/share/telorax/deps.sh ]]; then
+    # shellcheck source=/dev/null
+    source /usr/share/telorax/deps.sh
+    return
+  fi
+
+  local tag="${1:-latest}"
+  local deps_url
+  if [[ "${tag}" == latest ]]; then
+    tag="$(
+      curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" \
+        | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' \
+        | head -n 1
+    )"
+  fi
+  deps_url="https://github.com/${REPO}/releases/download/${tag}/deps.sh"
+  local tmp_deps
+  tmp_deps="$(mktemp /tmp/telorax-deps.XXXXXX.sh)"
+  curl -fsSL -o "${tmp_deps}" "${deps_url}"
+  # shellcheck source=/dev/null
+  source "${tmp_deps}"
+  rm -f "${tmp_deps}"
+}
+
+_require_root() {
+  if [[ "$(id -u)" -ne 0 ]]; then
+    echo 'This installer must run as root. Use: curl ... | sudo bash' >&2
+    exit 1
+  fi
+}
+
+_require_linux() {
+  if [[ "$(uname -s)" != 'Linux' ]]; then
+    echo 'Telorax releases are currently built for Linux only.' >&2
+    exit 1
+  fi
+
+  if [[ "$(uname -m)" != 'x86_64' ]]; then
+    echo "Unsupported architecture: $(uname -m). Only amd64 is supported." >&2
+    exit 1
+  fi
+}
+
+_fetch_latest_tag() {
   curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" \
     | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' \
     | head -n 1
-)
+}
 
-if [[ -z "${TAG}" ]]; then
-  echo 'Could not resolve latest release tag.' >&2
-  exit 1
-fi
+_install_app() {
+  local tag="$1"
+  local version deb_name deb_url tmp_deb
+  version="${tag#v}"
+  deb_name="telorax_${version}_linux_${ARCH}.deb"
+  deb_url="https://github.com/${REPO}/releases/download/${tag}/${deb_name}"
+  tmp_deb="$(mktemp /tmp/telorax.XXXXXX.deb)"
 
-VERSION="${TAG#v}"
-DEB_NAME="telorax_${VERSION}_linux_${ARCH}.deb"
-DEB_URL="https://github.com/${REPO}/releases/download/${TAG}/${DEB_NAME}"
-TMP_DEB="$(mktemp /tmp/telorax.XXXXXX.deb)"
+  echo "Downloading ${deb_url} ..."
+  curl -fsSL -o "${tmp_deb}" "${deb_url}"
 
-echo "Downloading ${DEB_URL} ..."
-curl -fsSL -o "${TMP_DEB}" "${DEB_URL}"
+  echo 'Installing Telorax package ...'
+  if command -v dpkg >/dev/null 2>&1; then
+    dpkg -i "${tmp_deb}" || apt-get install -f -y
+  else
+    echo 'dpkg not found. Install dpkg or use the binary install method from README.' >&2
+    rm -f "${tmp_deb}"
+    exit 1
+  fi
+  rm -f "${tmp_deb}"
+}
 
-echo 'Installing package ...'
-if command -v dpkg >/dev/null 2>&1; then
-  dpkg -i "${TMP_DEB}" || apt-get install -f -y
-else
-  echo 'dpkg not found. Install dpkg or use the binary install method from README.' >&2
-  rm -f "${TMP_DEB}"
-  exit 1
-fi
+_ensure_env_file() {
+  mkdir -p "${CONFIG_DIR}"
+  if [[ -f "${ENV_FILE}" ]]; then
+    return
+  fi
 
-rm -f "${TMP_DEB}"
-
-mkdir -p "${CONFIG_DIR}"
-if [[ ! -f "${ENV_FILE}" ]]; then
   if [[ -f "${CONFIG_DIR}/env.example" ]]; then
     cp "${CONFIG_DIR}/env.example" "${ENV_FILE}"
   else
@@ -82,16 +147,95 @@ EOF
   fi
   chmod 600 "${ENV_FILE}"
   echo "Created default config at ${ENV_FILE}"
-fi
+}
 
-if command -v systemctl >/dev/null 2>&1; then
-  systemctl daemon-reload
-  systemctl enable telorax
-  systemctl restart telorax
-  echo 'Telorax service enabled and started.'
-fi
+_enable_telorax_service() {
+  if command -v systemctl >/dev/null 2>&1; then
+    systemctl daemon-reload
+    systemctl enable telorax
+    systemctl restart telorax
+    echo 'Telorax service enabled and started.'
+  fi
+}
 
-echo
-echo "Installed successfully: telorax ${VERSION}"
-telorax version
-telorax doctor
+_install_all() {
+  local tag="$1"
+  _ensure_env_file
+
+  if [[ "${SKIP_DEPS}" != 1 ]]; then
+    echo 'Installing infrastructure dependencies (MariaDB/MySQL, Redis) ...'
+    deps_install
+  else
+    echo 'Skipping dependency installation (INSTALL_SKIP_DEPS=1).'
+  fi
+
+  _install_app "${tag}"
+
+  _enable_telorax_service
+
+  echo
+  echo "Installed successfully: telorax ${tag#v}"
+  telorax version
+  deps_status
+  telorax doctor
+}
+
+_handle_deps_command() {
+  local action="${1:-}"
+  case "${action}" in
+    install) deps_install ;;
+    status) deps_status ;;
+    start) deps_start ;;
+    stop) deps_stop ;;
+    restart) deps_restart ;;
+    provision) deps_provision ;;
+    *)
+      echo "Unknown deps action: ${action}" >&2
+      _usage
+      exit 1
+      ;;
+  esac
+}
+
+main() {
+  _require_root
+  _require_linux
+
+  local command="${1:-install}"
+  shift || true
+
+  case "${command}" in
+    -h|--help|help)
+      _usage
+      exit 0
+      ;;
+    deps)
+      _source_deps
+      _handle_deps_command "${1:-status}"
+      ;;
+    install)
+      while [[ $# -gt 0 ]]; do
+        case "$1" in
+          --skip-deps) SKIP_DEPS=1; shift ;;
+          *) echo "Unknown option: $1" >&2; _usage; exit 1 ;;
+        esac
+      done
+      local tag
+      echo "Fetching latest release from github.com/${REPO} ..."
+      tag="$(_fetch_latest_tag)"
+      if [[ -z "${tag}" ]]; then
+        echo 'Could not resolve latest release tag.' >&2
+        exit 1
+      fi
+      _source_deps "${tag}"
+      _install_all "${tag}"
+      ;;
+    *)
+      echo "Unknown command: ${command}" >&2
+      _usage
+      exit 1
+      ;;
+  esac
+}
+
+main "$@"

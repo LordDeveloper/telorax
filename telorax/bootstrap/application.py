@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import signal
 from typing import TYPE_CHECKING
 
@@ -52,10 +53,8 @@ class Application:
         if hasattr(signal, 'SIGTERM'):
             loop = asyncio.get_running_loop()
             for sig in (signal.SIGINT, signal.SIGTERM):
-                try:
+                with contextlib.suppress(NotImplementedError):
                     loop.add_signal_handler(sig, self._shutdown_event.set)
-                except NotImplementedError:
-                    pass
         await self._shutdown_event.wait()
         server.should_exit = True
         await serve_task

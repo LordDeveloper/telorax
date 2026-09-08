@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import hashlib
 import json
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from telorax.core.enums import EngagementKind
+if TYPE_CHECKING:
+    from telorax.core.enums import EngagementKind
 
 _TRANSIENT_SPEC_KEYS = frozenset({
     'failure_reason',

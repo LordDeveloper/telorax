@@ -1,10 +1,13 @@
 from __future__ import annotations
 
-from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import BigInteger, Boolean, DateTime, Index, Integer, String, Text, func
 from sqlalchemy.dialects.mysql import JSON
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+if TYPE_CHECKING:
+    from datetime import datetime
 
 
 class Base(DeclarativeBase):
@@ -77,7 +80,10 @@ class CampaignDispatchModel(Base):
     account_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     outcome: Mapped[int] = mapped_column(Integer, default=1)
     error_code: Mapped[str | None] = mapped_column(String(64))
-    dispatched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    dispatched_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+    )
 
 
 class ChannelMembershipModel(Base):
@@ -91,7 +97,10 @@ class ChannelMembershipModel(Base):
     peer_kind: Mapped[int] = mapped_column(Integer)
     source_fingerprint: Mapped[str | None] = mapped_column(String(128))
     subscribed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    unsubscribe_scheduled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    unsubscribe_scheduled_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        index=True,
+    )
     last_activity_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
 

@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from typing import TYPE_CHECKING
 
 from telorax.domain.interfaces.repositories import UnitOfWork
 from telorax.infrastructure.database.repositories.sqlalchemy_campaign_dispatch import (
     SQLAlchemyCampaignDispatchRepository,
 )
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 
 class SQLAlchemyUnitOfWork(UnitOfWork):

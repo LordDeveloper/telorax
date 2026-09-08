@@ -1,11 +1,16 @@
 from __future__ import annotations
 
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import TYPE_CHECKING
 
-from telorax.domain.entities import CampaignDispatch
+from sqlalchemy import select
+
 from telorax.domain.interfaces.repositories import CampaignDispatchRepository
 from telorax.infrastructure.database.models import CampaignDispatchModel
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    from telorax.domain.entities import CampaignDispatch
 
 
 class SQLAlchemyCampaignDispatchRepository(CampaignDispatchRepository):

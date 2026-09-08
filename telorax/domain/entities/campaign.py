@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from telorax.core.enums import CampaignState, EngagementKind
+
+if TYPE_CHECKING:
+    from datetime import datetime
 
 
 @dataclass(slots=True)

@@ -1,9 +1,15 @@
 from __future__ import annotations
 
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
-from telorax.core.enums import AccountState, CampaignState, DispatchOutcome
-from telorax.domain.entities import Campaign, CampaignDispatch, ChannelMembership, TelegramAccount
+if TYPE_CHECKING:
+    from telorax.core.enums import AccountState, CampaignState
+    from telorax.domain.entities import (
+        Campaign,
+        CampaignDispatch,
+        ChannelMembership,
+        TelegramAccount,
+    )
 
 
 class TelegramAccountRepository(Protocol):

@@ -8,6 +8,8 @@ import structlog
 correlation_id_var: ContextVar[str] = ContextVar('correlation_id', default='')
 cycle_id_var: ContextVar[str] = ContextVar('cycle_id', default='')
 
+_PHONE_VISIBLE_PREFIX = 5
+
 
 def bind_context(**kwargs: object) -> None:
     structlog.contextvars.bind_contextvars(**kwargs)
@@ -29,6 +31,6 @@ def bind_cycle_id(cycle_id: str | None = None) -> str:
 
 def mask_phone(phone: int | str) -> str:
     phone_str = str(phone)
-    if len(phone_str) <= 5:
+    if len(phone_str) <= _PHONE_VISIBLE_PREFIX:
         return '***'
-    return f'{phone_str[:5]}***'
+    return f'{phone_str[:_PHONE_VISIBLE_PREFIX]}***'

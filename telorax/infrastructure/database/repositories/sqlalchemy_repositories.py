@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import or_, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from telorax.core.enums import AccountState, CampaignState, EngagementKind
 from telorax.domain.entities import Campaign, TelegramAccount
 from telorax.domain.interfaces.repositories import CampaignRepository, TelegramAccountRepository
 from telorax.infrastructure.database.models import CampaignModel, TelegramAccountModel
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 
 def _to_account(model: TelegramAccountModel) -> TelegramAccount:

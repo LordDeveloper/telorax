@@ -1,6 +1,9 @@
+import contextlib
 from pathlib import Path
 
 import typer
+
+from telorax.core.config.settings import Settings, default_env_path
 
 config_app = typer.Typer(help='Configuration management')
 
@@ -10,8 +13,6 @@ _PACKAGING_EXAMPLE = Path(__file__).resolve().parents[3] / 'packaging' / 'env.ex
 @config_app.command('init')
 def init_config() -> None:
     """Create default env file at /etc/telorax/.env"""
-    from telorax.core.config.settings import default_env_path
-
     env_path = default_env_path()
     env_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -25,18 +26,14 @@ def init_config() -> None:
         else _default_env_content()
     )
     env_path.write_text(content, encoding='utf-8')
-    try:
+    with contextlib.suppress(OSError):
         env_path.chmod(0o600)
-    except OSError:
-        pass
     typer.echo(f'Created config: {env_path}')
 
 
 @config_app.command('validate')
 def validate_config() -> None:
     """Validate /etc/telorax/.env"""
-    from telorax.core.config.settings import Settings, default_env_path
-
     env_path = default_env_path()
     if not env_path.is_file():
         typer.echo(f'Config not found: {env_path}')

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 
 from telorax.core.enums import AccountState
 
@@ -43,7 +43,6 @@ class TelegramAccount:
     def is_rate_limited(self) -> bool:
         if self.rate_limited_until is None:
             return False
-        from datetime import UTC
 
         limit_until = self.rate_limited_until
         if limit_until.tzinfo is None:

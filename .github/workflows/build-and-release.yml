@@ -1,20 +1,55 @@
-name: Release
+name: Build and Release
 
 on:
   push:
-    branches: [main]
+    branches: [main, master]
+  pull_request:
 
 permissions:
   contents: write
 
 concurrency:
-  group: telorax-release
-  cancel-in-progress: false
+  group: telorax-build-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
+  test:
+    if: ${{ github.event_name == 'pull_request' || !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Ruff
+        run: ruff check telorax tests
+
+      - name: Mypy
+        run: mypy telorax/
+
+      - name: Pytest
+        run: pytest --cov=telorax --cov-report=term-missing
+
   release:
-    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
+    needs: test
+    if: >-
+      ${{
+        github.event_name == 'push'
+        && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        && !contains(github.event.head_commit.message, '[skip ci]')
+      }}
     runs-on: ubuntu-22.04
+    concurrency:
+      group: telorax-release
+      cancel-in-progress: false
 
     steps:
       - uses: actions/checkout@v4
@@ -52,19 +87,13 @@ jobs:
           sed -i "s/^version = .*/version = '${VERSION}'/" pyproject.toml
           sed -i "s/^__version__ = .*/__version__ = '${VERSION}'/" telorax/__init__.py
 
-      - name: Install dependencies
+      - name: Install build dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y python3-dev gcc patchelf
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
           pip install nuitka ordered-set zstandard
-
-      - name: Test
-        run: |
-          ruff check .
-          mypy telorax/
-          pytest tests/unit -q
 
       - name: Build binary
         run: |
@@ -84,11 +113,13 @@ jobs:
           VERSION='${{ steps.version.outputs.version }}'
           ARCH='amd64'
           PKG_ROOT="telorax_${VERSION}_linux_${ARCH}"
-          mkdir -p "${PKG_ROOT}/DEBIAN" "${PKG_ROOT}/usr/local/bin" "${PKG_ROOT}/etc/telorax" "${PKG_ROOT}/lib/systemd/system"
+          mkdir -p "${PKG_ROOT}/DEBIAN" "${PKG_ROOT}/usr/local/bin" "${PKG_ROOT}/etc/telorax" "${PKG_ROOT}/lib/systemd/system" "${PKG_ROOT}/usr/share/telorax"
 
           cp dist/telorax "${PKG_ROOT}/usr/local/bin/telorax"
           cp packaging/telorax.service "${PKG_ROOT}/lib/systemd/system/telorax.service"
           cp packaging/env.example "${PKG_ROOT}/etc/telorax/env.example"
+          cp scripts/deps.sh "${PKG_ROOT}/usr/share/telorax/deps.sh"
+          chmod 755 "${PKG_ROOT}/usr/share/telorax/deps.sh"
 
           {
             echo 'Package: telorax'
@@ -122,6 +153,7 @@ jobs:
           cp dist/telorax release-assets/telorax
           cp "telorax_${VERSION}_linux_amd64.deb" release-assets/
           cp scripts/install.sh release-assets/
+          cp scripts/deps.sh release-assets/
           (
             cd release-assets
             sha256sum telorax telorax_*.deb > SHA256SUMS
@@ -152,3 +184,4 @@ jobs:
             release-assets/telorax_*_linux_*.deb
             release-assets/SHA256SUMS
             release-assets/install.sh
+            release-assets/deps.sh

@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from typing import TYPE_CHECKING
 
-from telorax.core.enums import PeerKind
+if TYPE_CHECKING:
+    from datetime import datetime
+
+    from telorax.core.enums import PeerKind
 
 
 @dataclass(slots=True)

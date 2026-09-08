@@ -8,8 +8,33 @@ Platform اتوماسیون Telegram account — مدیریت farm اکانت و
 
 ### روش ۱ — یک خط (پیشنهادی)
 
+نصب کامل Telorax به‌همراه MariaDB/MySQL و Redis:
+
 ```bash
 curl -fsSL https://github.com/LordDeveloper/telorax/releases/latest/download/install.sh | sudo bash
+```
+
+فقط نصب Telorax (بدون دیتابیس و Redis):
+
+```bash
+INSTALL_SKIP_DEPS=1 curl -fsSL https://github.com/LordDeveloper/telorax/releases/latest/download/install.sh | sudo bash
+```
+
+مدیریت پیش‌نیازها (MariaDB/MySQL و Redis):
+
+```bash
+curl -fsSL https://github.com/LordDeveloper/telorax/releases/latest/download/install.sh | sudo bash -s -- deps install
+curl -fsSL https://github.com/LordDeveloper/telorax/releases/latest/download/install.sh | sudo bash -s -- deps status
+curl -fsSL https://github.com/LordDeveloper/telorax/releases/latest/download/install.sh | sudo bash -s -- deps restart
+```
+
+بعد از نصب، از CLI هم می‌توانید استفاده کنید:
+
+```bash
+sudo telorax deps install
+sudo telorax deps status
+sudo telorax deps restart
+sudo telorax deps provision   # ساخت/به‌روزرسانی DB و user از روی .env
 ```
 
 ### روش ۲ — نصب دستی با `.deb`
@@ -104,11 +129,13 @@ telorax serve
 
 ## پیش‌نیازها
 
-| سرویس | نسخه پیشنهادی |
-|--------|----------------|
-| Ubuntu | 22.04 / 24.04 |
-| MariaDB / MySQL | 10.6+ |
-| Redis | 7+ |
+| سرویس | نسخه پیشنهادی | نصب خودکار |
+|--------|----------------|-------------|
+| Ubuntu / Debian | 22.04 / 24.04 | — |
+| MariaDB / MySQL | 10.6+ | `install.sh` / `telorax deps install` |
+| Redis | 7+ | `install.sh` / `telorax deps install` |
+
+`install.sh` به‌صورت پیش‌فرض MariaDB و Redis را با `apt` نصب می‌کند، سرویس‌ها را enable/start می‌کند و دیتابیس `telorax` را طبق `/etc/telorax/.env` می‌سازد.
 
 ---
 
@@ -126,6 +153,7 @@ Assetهای هر release:
 telorax
 telorax_{version}_linux_amd64.deb
 install.sh
+deps.sh
 SHA256SUMS
 ```
 
