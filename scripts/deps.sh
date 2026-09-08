@@ -35,35 +35,45 @@ _ensure_apt() {
 
 _service_name() {
   local base="$1"
-  if systemctl list-unit-files "${base}.service" --no-legend 2>/dev/null | grep -q "${base}.service"; then
-    echo "${base}"
-    return
-  fi
   case "${base}" in
-    mysql)
-      if systemctl list-unit-files mariadb.service --no-legend 2>/dev/null | grep -q mariadb.service; then
+    mysql|mariadb)
+      if systemctl list-unit-files mariadb.service --no-legend 2>/dev/null | awk '{print $1}' | grep -qx 'mariadb.service'; then
         echo 'mariadb'
         return
       fi
-      ;;
-    mariadb)
-      if systemctl list-unit-files mysql.service --no-legend 2>/dev/null | grep -q mysql.service; then
+      if systemctl list-unit-files mysql.service --no-legend 2>/dev/null | awk '{print $1}' | grep -qx 'mysql.service'; then
         echo 'mysql'
         return
       fi
       ;;
     redis)
-      if systemctl list-unit-files redis-server.service --no-legend 2>/dev/null | grep -q redis-server.service; then
+      # redis.service is often an alias on Debian/Ubuntu; systemctl enable rejects aliases.
+      if systemctl list-unit-files redis-server.service --no-legend 2>/dev/null | awk '{print $1}' | grep -qx 'redis-server.service'; then
         echo 'redis-server'
         return
       fi
-      if systemctl list-unit-files redis.service --no-legend 2>/dev/null | grep -q redis.service; then
-        echo 'redis'
-        return
+      if systemctl list-unit-files redis.service --no-legend 2>/dev/null | awk '{print $1}' | grep -qx 'redis.service'; then
+        local fragment
+        fragment="$(systemctl show -p FragmentPath redis.service 2>/dev/null | cut -d= -f2-)"
+        if [[ -n "${fragment}" && "${fragment}" != n/a ]]; then
+          basename "${fragment}" .service
+          return
+        fi
       fi
       ;;
   esac
+
+  if systemctl list-unit-files "${base}.service" --no-legend 2>/dev/null | awk '{print $1}' | grep -qx "${base}.service"; then
+    echo "${base}"
+    return
+  fi
   echo "${base}"
+}
+
+_systemctl() {
+  local action="$1"
+  local service="$2"
+  systemctl "${action}" "${service}.service"
 }
 
 _deps_install_packages() {
@@ -74,10 +84,10 @@ _deps_install_packages() {
   apt-get update
   apt-get install -y mariadb-server redis-server curl ca-certificates
 
-  systemctl enable "$(_service_name mariadb)"
-  systemctl enable "$(_service_name redis)"
-  systemctl start "$(_service_name mariadb)"
-  systemctl start "$(_service_name redis)"
+  _systemctl enable "$(_service_name mariadb)"
+  _systemctl enable "$(_service_name redis)"
+  _systemctl start "$(_service_name mariadb)"
+  _systemctl start "$(_service_name redis)"
 }
 
 _deps_provision_database() {
@@ -117,8 +127,8 @@ deps_status() {
   db_service="$(_service_name mariadb)"
   redis_service="$(_service_name redis)"
 
-  echo "MariaDB/MySQL (${db_service}): $(systemctl is-active "${db_service}" 2>/dev/null || echo 'missing')"
-  echo "Redis (${redis_service}): $(systemctl is-active "${redis_service}" 2>/dev/null || echo 'missing')"
+  echo "MariaDB/MySQL (${db_service}): $(systemctl is-active "${db_service}.service" 2>/dev/null || echo 'missing')"
+  echo "Redis (${redis_service}): $(systemctl is-active "${redis_service}.service" 2>/dev/null || echo 'missing')"
 
   if command -v mysql >/dev/null 2>&1; then
     local db_name db_user
@@ -155,8 +165,8 @@ _deps_manage() {
   db_service="$(_service_name mariadb)"
   redis_service="$(_service_name redis)"
 
-  systemctl "${action}" "${db_service}"
-  systemctl "${action}" "${redis_service}"
+  systemctl "${action}" "${db_service}.service"
+  systemctl "${action}" "${redis_service}.service"
   echo "Services ${action}ed: ${db_service}, ${redis_service}"
 }
 

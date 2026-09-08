@@ -1,7 +1,7 @@
 [Unit]
 Description=Telorax Telegram Automation Service
-After=network.target mysql.service redis.service
-Wants=mysql.service redis.service
+After=network.target mariadb.service redis-server.service
+Wants=mariadb.service redis-server.service
 
 [Service]
 Type=simple
