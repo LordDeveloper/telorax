@@ -1,6 +1,6 @@
 [project]
 name = 'telorax'
-version = '0.1.17'
+version = '0.1.18'
 description = 'Telegram account automation platform'
 readme = 'README.md'
 requires-python = '>=3.11'
