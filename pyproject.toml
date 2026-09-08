@@ -1,0 +1,75 @@
+[project]
+name = 'telorax'
+version = '0.1.0'
+description = 'Telegram account automation platform'
+readme = 'README.md'
+requires-python = '>=3.11'
+dependencies = [
+    'fastapi>=0.115.0,<1.0',
+    'uvicorn[standard]>=0.32.0,<1.0',
+    'sqlalchemy[asyncio]>=2.0.36,<3.0',
+    'asyncmy>=0.2.9,<1.0',
+    'alembic>=1.14.0,<2.0',
+    'redis>=5.2.0,<9.0',
+    'telethon>=1.40.0,<2.0',
+    'pydantic>=2.10.0,<3.0',
+    'pydantic-settings>=2.6.0,<3.0',
+    'typer>=0.15.0,<1.0',
+    'textual>=1.0.0,<5.0',
+    'rich>=13.9.0,<14.0',
+    'dependency-injector>=4.42.0,<5.0',
+    'structlog>=24.4.0,<27.0',
+    'uvloop>=0.21.0; sys_platform != "win32"',
+    'phonenumbers>=8.13.0',
+    'cryptography>=43.0.0,<51.0',
+    'python-multipart>=0.0.18,<1.0',
+    'httpx>=0.28.0,<1.0',
+]
+
+[project.optional-dependencies]
+dev = [
+    'pytest>=8.3.0',
+    'pytest-asyncio>=0.24.0',
+    'pytest-cov>=6.0.0',
+    'ruff>=0.8.0',
+    'mypy>=1.14.0',
+    'factory-boy>=3.3.0',
+]
+
+[project.scripts]
+telorax = 'telorax.cli.app:main'
+
+[build-system]
+requires = ['hatchling']
+build-backend = 'hatchling.build'
+
+[tool.hatch.build.targets.wheel]
+packages = ['telorax']
+
+[tool.ruff]
+line-length = 100
+target-version = 'py312'
+
+[tool.ruff.lint]
+select = ['E', 'F', 'W', 'I', 'N', 'UP', 'B', 'A', 'COM', 'C4', 'DTZ', 'T20', 'ICN', 'LOG', 'G', 'PIE', 'PT', 'RSE', 'SLF', 'SIM', 'TID', 'TCH', 'ARG', 'PTH', 'PL']
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.pylint]
+max-args = 4
+max-branches = 8
+max-statements = 30
+
+[tool.mypy]
+python_version = '3.12'
+strict = true
+plugins = ['pydantic.mypy']
+
+
+[tool.coverage.run]
+source = ['telorax']
+branch = true
+
+[tool.coverage.report]
+fail_under = 80

@@ -1,0 +1,17 @@
+[Unit]
+Description=Telorax Telegram Automation Service
+After=network.target mysql.service redis.service
+Wants=mysql.service redis.service
+
+[Service]
+Type=simple
+User=telorax
+Group=telorax
+WorkingDirectory=/etc/telorax
+EnvironmentFile=/etc/telorax/.env
+ExecStart=/usr/local/bin/telorax serve
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

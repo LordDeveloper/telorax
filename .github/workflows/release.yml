@@ -1,0 +1,89 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-dev gcc patchelf
+          python -m pip install --upgrade pip
+          pip install nuitka ordered-set zstandard
+          pip install .
+
+      - name: Build binary
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          python -m nuitka \
+            --standalone \
+            --onefile \
+            --output-filename=telorax \
+            --include-package=telorax \
+            telorax/cli/app.py
+          chmod +x telorax
+          echo "${VERSION}" > VERSION
+
+      - name: Build .deb package
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          ARCH='amd64'
+          PKG_ROOT="telorax_${VERSION}_linux_${ARCH}"
+          mkdir -p "${PKG_ROOT}/DEBIAN" "${PKG_ROOT}/usr/local/bin" "${PKG_ROOT}/etc/telorax" "${PKG_ROOT}/lib/systemd/system"
+
+          cp telorax "${PKG_ROOT}/usr/local/bin/telorax"
+          cp packaging/telorax.service "${PKG_ROOT}/lib/systemd/system/telorax.service"
+          cp packaging/env.example "${PKG_ROOT}/etc/telorax/env.example"
+
+          cat > "${PKG_ROOT}/DEBIAN/control" <<EOF
+          Package: telorax
+          Version: ${VERSION}
+          Section: utils
+          Priority: optional
+          Architecture: ${ARCH}
+          Maintainer: Telorax Team
+          Description: Telegram account automation platform
+          EOF
+
+          cat > "${PKG_ROOT}/DEBIAN/postinst" <<'EOF'
+          #!/bin/sh
+          set -e
+          mkdir -p /etc/telorax
+          if [ ! -f /etc/telorax/.env ]; then
+            cp /etc/telorax/env.example /etc/telorax/.env
+            chmod 600 /etc/telorax/.env
+          fi
+          systemctl daemon-reload || true
+          EOF
+          chmod 755 "${PKG_ROOT}/DEBIAN/postinst"
+
+          dpkg-deb --build "${PKG_ROOT}"
+          mv "${PKG_ROOT}.deb" "telorax_${VERSION}_linux_${ARCH}.deb"
+
+      - name: Checksums
+        run: |
+          sha256sum telorax telorax_*.deb > SHA256SUMS
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            telorax
+            telorax_*_linux_*.deb
+            SHA256SUMS
+            scripts/install.sh
