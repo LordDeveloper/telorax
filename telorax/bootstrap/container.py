@@ -15,6 +15,8 @@ class Container(containers.DeclarativeContainer):
         packages=['telorax.api', 'telorax.cli'],
     )
 
+    __self__ = providers.Self()
+
     config = providers.Singleton(Settings.load)
 
     db_engine = providers.Singleton(
@@ -41,4 +43,4 @@ class Container(containers.DeclarativeContainer):
         session_factory=session_factory,
     )
 
-    application = providers.Singleton(Application, container=providers.Self())
+    application = providers.Singleton(Application, container=__self__)

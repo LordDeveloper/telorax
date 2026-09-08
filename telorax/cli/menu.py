@@ -183,7 +183,7 @@ def _service_menu() -> None:
                 Choice('start', 'Start service', GREEN, '2'),
                 Choice('stop', 'Stop service', RED, '3'),
                 Choice('restart', 'Restart service', YELLOW, '4'),
-                Choice('foreground', 'Run in foreground', WHITE, '5'),
+                Choice('foreground', 'Start server (foreground)', GREEN, '5'),
                 Choice('back', 'Back', WHITE, '0'),
             ],
         )
@@ -204,18 +204,23 @@ def _service_menu() -> None:
             _run_action('Restart service', lambda: actions.run_service('restart'))
             continue
         if picked == 'foreground':
-            _run_action('Foreground server', _serve_hint)
+            _run_foreground_serve()
 
 
-def _serve_hint() -> None:
-    _print(paint(' Start the API server with:', CYAN))
-    _print(paint('   telorax serve', GREEN))
+def _run_foreground_serve() -> None:
+    show_cursor()
+    clear_screen()
+    _print(paint(' Telorax API server', CYAN))
+    _print(paint(' Press Ctrl+C to stop and return to the menu.', DIM))
     _print()
-    _print(paint(' Requires a free APP_PORT. Check with:', DIM))
-    _print(paint('   telorax service status', GREEN))
-    _print()
-    _print(paint(' Or manage the systemd unit:', DIM))
-    _print(paint('   sudo systemctl enable --now telorax', GREEN))
+    try:
+        actions.run_serve()
+    except RuntimeError as exc:
+        _print(paint(f'\n {exc}', RED))
+        pause()
+    except KeyboardInterrupt:
+        _print(paint('\n Server stopped.', YELLOW))
+        pause()
 
 
 def run_interactive() -> int:
@@ -240,6 +245,7 @@ def run_interactive() -> int:
                     Choice('migrate', 'Run migrations', WHITE, '4'),
                     Choice('doctor', 'Diagnostics', MAGENTA, '5'),
                     Choice('service', 'Telorax service', GREEN, '6'),
+                    Choice('serve', 'Start API server', CYAN, '7'),
                     Choice('exit', 'Exit', WHITE, '0'),
                 ],
             )
@@ -258,6 +264,8 @@ def run_interactive() -> int:
                 _run_action('Diagnostics', _show_doctor)
             elif picked == 'service':
                 _service_menu()
+            elif picked == 'serve':
+                _run_foreground_serve()
     except KeyboardInterrupt:
         show_cursor()
         return 130

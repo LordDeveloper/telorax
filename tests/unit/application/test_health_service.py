@@ -8,7 +8,11 @@ from telorax.application.services.health_service import HealthService
 from telorax.core.config.settings import Settings
 
 
-def _mock_api_health(*, port_open: bool = True, telorax: bool = True) -> tuple[MagicMock, MagicMock]:
+def _mock_api_health(
+    *,
+    port_open: bool = True,
+    telorax: bool = True,
+) -> tuple[MagicMock, MagicMock]:
     response = MagicMock()
     response.status_code = 200 if telorax else 404
     response.json.return_value = {'status': 'healthy'} if telorax else {}

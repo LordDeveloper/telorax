@@ -68,6 +68,16 @@ def run_migrations() -> None:
     migrate()
 
 
+def run_serve() -> None:
+    from telorax.bootstrap.application import Application
+    from telorax.bootstrap.container import Container
+
+    container = Container()
+    container.wire(modules=['telorax.cli.actions'])
+    application = Application(container)
+    asyncio.run(application.run_server())
+
+
 def load_settings_summary() -> tuple[Path, Settings | None]:
     env_path = default_env_path()
     if not env_path.is_file():

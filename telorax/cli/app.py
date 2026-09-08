@@ -4,6 +4,7 @@ import asyncio
 
 import typer
 
+from telorax.bootstrap.application import Application
 from telorax.bootstrap.container import Container
 from telorax.cli.commands.config import config_app
 from telorax.cli.commands.deps import deps_app
@@ -40,7 +41,7 @@ def serve_command() -> None:
     """Start API server in headless mode."""
     container = Container()
     container.wire()
-    application = container.application()
+    application = Application(container)
     try:
         asyncio.run(application.run_server())
     except RuntimeError as exc:
