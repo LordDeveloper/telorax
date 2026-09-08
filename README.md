@@ -114,7 +114,13 @@ telorax serve
 
 ## Release
 
-هر tag با فرمت `v*.*.*` باعث ساخت خودکار release می‌شود:
+با هر push به `main`، CI به‌صورت خودکار:
+
+1. آخرین tag را می‌خواند و patch را یکی زیاد می‌کند (اولین release: `v0.1.0`)
+2. تست، بیلد باینری و `.deb` را اجرا می‌کند
+3. tag جدید و GitHub Release می‌سازد
+
+Assetهای هر release:
 
 ```
 telorax
@@ -122,6 +128,8 @@ telorax_{version}_linux_amd64.deb
 install.sh
 SHA256SUMS
 ```
+
+برای جلوگیری از loop، commitهای `[skip ci]` (مثل bump خودکار version) release را دوباره trigger نمی‌کنند.
 
 ---
 
