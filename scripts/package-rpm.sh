@@ -77,6 +77,8 @@ cp -a ${ROOT}/. %{buildroot}/
 /lib/systemd/system/telorax-redis.service
 /lib/systemd/system/telorax-mariadb.service
 /usr/share/telorax/deps.sh
+/usr/share/telorax/alembic.ini
+/usr/share/telorax/migrations
 /usr/share/telorax/telorax-redis.service
 /usr/share/telorax/telorax-mariadb.service
 /usr/share/telorax/docs
