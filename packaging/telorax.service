@@ -12,6 +12,8 @@ EnvironmentFile=/etc/telorax/.env
 ExecStart=/usr/local/bin/telorax serve
 Restart=on-failure
 RestartSec=5
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target

@@ -114,7 +114,7 @@ class Settings(BaseSettings):
     @classmethod
     def load(cls, env_path: Path | None = None) -> Settings:
         path = env_path or default_env_path()
-        if path.is_file():
+        if path.is_file() and os.access(path, os.R_OK):
             return cls(_env_file=path, _env_file_encoding='utf-8')
         return cls()
 

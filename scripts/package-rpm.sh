@@ -100,6 +100,9 @@ fi
 mkdir -p /etc/telorax /opt/telorax/data/mysql /opt/telorax/data/redis /opt/telorax/run /opt/telorax/config
 if [ ! -f /etc/telorax/.env ]; then
   cp /etc/telorax/env.example /etc/telorax/.env
+fi
+if [ -f /etc/telorax/.env ]; then
+  chown telorax:telorax /etc/telorax/.env
   chmod 600 /etc/telorax/.env
 fi
 python3 -m venv /opt/telorax/venv

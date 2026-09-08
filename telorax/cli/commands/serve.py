@@ -18,6 +18,9 @@ def serve_root(ctx: typer.Context) -> None:
     except RuntimeError as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(code=1) from exc
+    except Exception as exc:
+        typer.echo(f'Server failed: {exc}', err=True)
+        raise typer.Exit(code=1) from exc
 
 
 @serve_app.command('status')
@@ -54,4 +57,7 @@ def serve_run() -> None:
         run_serve_foreground()
     except RuntimeError as exc:
         typer.echo(str(exc), err=True)
+        raise typer.Exit(code=1) from exc
+    except Exception as exc:
+        typer.echo(f'Server failed: {exc}', err=True)
         raise typer.Exit(code=1) from exc

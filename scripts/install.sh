@@ -192,6 +192,9 @@ LOG_JSON=true
 EOF
   fi
   chmod 600 "${ENV_FILE}"
+  if id telorax >/dev/null 2>&1; then
+    chown telorax:telorax "${ENV_FILE}"
+  fi
   echo "Created default config at ${ENV_FILE}"
 }
 

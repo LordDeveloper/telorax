@@ -138,12 +138,10 @@ def run_serve_daemon(action: str) -> None:
     systemctl = _systemctl_path()
     if action == 'status':
         show_service_status()
-        result = subprocess.run(
+        subprocess.run(
             [systemctl, 'status', SERVICE_UNIT, '--no-pager', '-l'],
             check=False,
         )
-        if result.returncode != 0:
-            raise subprocess.CalledProcessError(result.returncode, result.args)
         return
 
     if action == 'start':
