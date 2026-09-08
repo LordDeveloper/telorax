@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: telorax-build-${{ github.ref }}
@@ -16,12 +17,10 @@ jobs:
   building:
     name: Building
     if: ${{ github.event_name == 'pull_request' || !contains(github.event.head_commit.message, '[skip ci]') }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
@@ -29,30 +28,10 @@ jobs:
           cache: pip
           cache-dependency-path: pyproject.toml
 
-      - name: Cache Nuitka build
-        if: github.event_name == 'push'
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/Nuitka
-            ~/.cache/ccache
-          key: nuitka-${{ runner.os }}-${{ hashFiles('pyproject.toml', 'telorax/**/*.py') }}
-          restore-keys: |
-            nuitka-${{ runner.os }}-
-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
-          if [ "${{ github.event_name }}" = "push" ]; then
-            pip install nuitka ordered-set zstandard
-          fi
-
-      - name: Install build tools
-        if: github.event_name == 'push'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends python3-dev gcc patchelf ccache
 
       - name: Ruff
         run: ruff check telorax tests
@@ -63,8 +42,79 @@ jobs:
       - name: Pytest
         run: pytest --cov=telorax --cov-report=term-missing
 
+  build-binary:
+    name: build-${{ matrix.asset }}
+    needs: building
+    if: >-
+      ${{
+        github.event_name == 'push'
+        && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        && !contains(github.event.head_commit.message, '[skip ci]')
+      }}
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            asset: telorax-linux-amd64
+            runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build ${{ matrix.asset }}
+        uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: false
+        with:
+          context: .
+          file: packaging/Dockerfile
+          platforms: ${{ matrix.platform }}
+          target: export
+          provenance: false
+          sbom: false
+          build-args: |
+            NUITKA_JOBS=4
+          outputs: type=local,dest=dist/export
+          cache-from: type=gha,scope=${{ matrix.asset }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.asset }}
+
+      - name: Package binary
+        run: |
+          mkdir -p dist
+          cp -f dist/export/telorax "dist/${{ matrix.asset }}"
+          chmod +x "dist/${{ matrix.asset }}"
+          ln -sf "${{ matrix.asset }}" dist/telorax
+          file "dist/${{ matrix.asset }}" || true
+          ls -lh dist/
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: dist/${{ matrix.asset }}
+          if-no-files-found: error
+
+  package-release:
+    name: package-release
+    needs: build-binary
+    if: >-
+      ${{
+        github.event_name == 'push'
+        && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        && !contains(github.event.head_commit.message, '[skip ci]')
+      }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Determine next version
-        if: github.event_name == 'push'
         id: version
         run: |
           git fetch --tags --force
@@ -82,77 +132,21 @@ jobs:
           VERSION="${NEXT_TAG#v}"
           echo "tag=${NEXT_TAG}" >> "${GITHUB_OUTPUT}"
           echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
-          echo "Next release: ${NEXT_TAG}"
 
-      - name: Sync project version
-        if: github.event_name == 'push'
+      - name: Download binary
+        uses: actions/download-artifact@v4
+        with:
+          name: telorax-linux-amd64
+          path: dist
+
+      - name: Assemble release bundle
         run: |
           VERSION='${{ steps.version.outputs.version }}'
-          sed -i "s/^version = .*/version = '${VERSION}'/" pyproject.toml
-          sed -i "s/^__version__ = .*/__version__ = '${VERSION}'/" telorax/__init__.py
-
-      - name: Build binary
-        if: github.event_name == 'push'
-        env:
-          CCACHE_DIR: ~/.cache/ccache
-        run: |
-          mkdir -p dist
-          python -m nuitka \
-            --standalone \
-            --onefile \
-            --jobs=$(nproc) \
-            --output-dir=dist \
-            --output-filename=telorax \
-            --include-package=telorax \
-            telorax/cli/app.py
-          chmod +x dist/telorax
-          dist/telorax version
-
-      - name: Build .deb package
-        if: github.event_name == 'push'
-        run: |
-          VERSION='${{ steps.version.outputs.version }}'
-          ARCH='amd64'
-          PKG_ROOT="telorax_${VERSION}_linux_${ARCH}"
-          mkdir -p "${PKG_ROOT}/DEBIAN" "${PKG_ROOT}/usr/local/bin" "${PKG_ROOT}/etc/telorax" "${PKG_ROOT}/lib/systemd/system" "${PKG_ROOT}/usr/share/telorax"
-
-          cp dist/telorax "${PKG_ROOT}/usr/local/bin/telorax"
-          cp packaging/telorax.service "${PKG_ROOT}/lib/systemd/system/telorax.service"
-          cp packaging/env.example "${PKG_ROOT}/etc/telorax/env.example"
-          cp scripts/deps.sh "${PKG_ROOT}/usr/share/telorax/deps.sh"
-          chmod 755 "${PKG_ROOT}/usr/share/telorax/deps.sh"
-
-          {
-            echo 'Package: telorax'
-            echo "Version: ${VERSION}"
-            echo 'Section: utils'
-            echo 'Priority: optional'
-            echo "Architecture: ${ARCH}"
-            echo 'Maintainer: Telorax Team'
-            echo 'Description: Telegram account automation platform'
-          } > "${PKG_ROOT}/DEBIAN/control"
-
-          cat > "${PKG_ROOT}/DEBIAN/postinst" <<'EOF'
-          #!/bin/sh
-          set -e
-          mkdir -p /etc/telorax
-          if [ ! -f /etc/telorax/.env ]; then
-            cp /etc/telorax/env.example /etc/telorax/.env
-            chmod 600 /etc/telorax/.env
-          fi
-          systemctl daemon-reload || true
-          EOF
-          chmod 755 "${PKG_ROOT}/DEBIAN/postinst"
-
-          dpkg-deb --build "${PKG_ROOT}"
-          mv "${PKG_ROOT}.deb" "telorax_${VERSION}_linux_${ARCH}.deb"
-
-      - name: Prepare release assets
-        if: github.event_name == 'push'
-        run: |
-          VERSION='${{ steps.version.outputs.version }}'
+          TAG='${{ steps.version.outputs.tag }}'
+          chmod +x scripts/package-deb.sh
+          scripts/package-deb.sh "${VERSION}" amd64 dist/telorax-linux-amd64
           mkdir -p release-assets
-          cp dist/telorax release-assets/telorax
+          cp dist/telorax-linux-amd64 release-assets/telorax
           cp "telorax_${VERSION}_linux_amd64.deb" release-assets/
           cp scripts/install.sh release-assets/
           cp scripts/deps.sh release-assets/
@@ -160,19 +154,19 @@ jobs:
             cd release-assets
             sha256sum telorax telorax_*.deb > SHA256SUMS
           )
-          echo "${{ steps.version.outputs.tag }}" > release-assets/RELEASE_TAG.txt
+          echo "${TAG}" > release-assets/RELEASE_TAG.txt
+          ls -lh release-assets/
 
-      - name: Upload release assets
-        if: github.event_name == 'push'
+      - name: Upload release bundle
         uses: actions/upload-artifact@v4
         with:
-          name: release-assets
+          name: telorax-release-bundle
           path: release-assets/
           retention-days: 1
 
   releasing:
     name: Releasing new version
-    needs: building
+    needs: package-release
     if: >-
       ${{
         github.event_name == 'push'
@@ -190,10 +184,10 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Download release assets
+      - name: Download release bundle
         uses: actions/download-artifact@v4
         with:
-          name: release-assets
+          name: telorax-release-bundle
           path: release-assets
 
       - name: Read release tag
@@ -220,7 +214,7 @@ jobs:
             git commit -m "chore: bump version to ${TAG} [skip ci]"
           fi
           git tag -a "${TAG}" -m "Release ${TAG}"
-          git push origin main
+          git push origin "HEAD:${{ github.ref_name }}"
           git push origin "${TAG}"
 
       - name: Create GitHub Release
