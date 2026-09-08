@@ -51,22 +51,34 @@ The installer detects your CPU architecture and picks the right package (`.deb` 
 
 ## Dependency management
 
-`install.sh` can install and manage MariaDB and Redis for you. Same commands exist in the CLI:
+By default Telorax runs **its own** MariaDB and Redis under `/opt/telorax` — separate data dirs, non-default ports, dedicated systemd units (`telorax-mariadb`, `telorax-redis`). It does **not** `systemctl enable redis.service` or touch your system-wide database stack.
+
+| Setting | Default (local) | System mode |
+|---------|-----------------|-------------|
+| MySQL port | `3307` | `3306` |
+| Redis port | `6380` | `6379` |
+| Data | `/opt/telorax/data/` | distro packages |
+| Units | `telorax-mariadb`, `telorax-redis` | `mariadb`, `redis-server` |
 
 ```bash
-# via install script
-curl -fsSL .../install.sh | sudo bash -s -- deps install
-curl -fsSL .../install.sh | sudo bash -s -- deps status
-curl -fsSL .../install.sh | sudo bash -s -- deps restart
+# default: isolated stack under /opt/telorax
+curl -fsSL .../install.sh | sudo bash
 
-# via CLI (after install)
-sudo telorax deps install      # apt: mariadb-server + redis-server
-sudo telorax deps status       # service + DB + redis ping checks
+# use existing system MariaDB/Redis instead
+DEPS_MODE=system curl -fsSL .../install.sh | sudo bash
+
+# Telorax only — you provide DB/Redis
+INSTALL_SKIP_DEPS=1 curl -fsSL .../install.sh | sudo bash
+```
+
+The installer **installs the Telorax package first**, then sets up dependencies — so `telorax` is available even if deps need a retry.
+
+```bash
+sudo telorax deps install      # local stack (default)
+sudo telorax deps status
 sudo telorax deps provision    # create DB/user from /etc/telorax/.env
 sudo telorax deps restart
 ```
-
-On Debian/Ubuntu, Redis is wired through `redis-server.service` (not the `redis.service` alias) so `systemctl enable` works reliably.
 
 ---
 
@@ -215,8 +227,8 @@ curl -s localhost:8000/v1/operations/queued
 |-----------|---------|----------------|
 | Linux | amd64 or arm64 | — |
 | Python | 3.11+ (bundled in packages via venv) | yes |
-| MariaDB / MySQL | 10.6+ | `install.sh` / `telorax deps install` |
-| Redis | 7+ | `install.sh` / `telorax deps install` |
+| MariaDB / MySQL | 10.6+ | `telorax deps install` (local or system) |
+| Redis | 7+ | `telorax deps install` (local or system) |
 
 Debian/Ubuntu 22.04+ and RHEL-family 8+ are the primary targets.
 

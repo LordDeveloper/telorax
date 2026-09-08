@@ -7,6 +7,7 @@ ARCH="${INSTALL_ARCH:-}"
 CONFIG_DIR="${CONFIG_DIR:-/etc/telorax}"
 ENV_FILE="${CONFIG_DIR}/.env"
 SKIP_DEPS="${INSTALL_SKIP_DEPS:-0}"
+DEPS_MODE="${DEPS_MODE:-local}"
 
 SCRIPT_PATH="${BASH_SOURCE[0]:-}"
 if [[ -n "${SCRIPT_PATH}" && "${SCRIPT_PATH}" != bash && -f "${SCRIPT_PATH}" ]]; then
@@ -27,6 +28,7 @@ Examples:
   curl -fsSL .../install.sh | sudo bash
   curl -fsSL .../install.sh | sudo bash -s -- deps status
   INSTALL_SKIP_DEPS=1 curl -fsSL .../install.sh | sudo bash
+  DEPS_MODE=system curl -fsSL .../install.sh | sudo bash
 EOF
 }
 
@@ -176,13 +178,13 @@ AUTH_PASSWORD=changeme
 
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
-DB_PORT=3306
+DB_PORT=3307
 DB_NAME=telorax
 DB_USER=telorax
 DB_PASSWORD=secret
 
 REDIS_HOST=127.0.0.1
-REDIS_PORT=6379
+REDIS_PORT=6380
 REDIS_DB=0
 
 LOG_LEVEL=INFO
@@ -206,22 +208,27 @@ _install_all() {
   local tag="$1"
   _ensure_env_file
 
+  echo 'Installing Telorax application package ...'
+  _install_app "${tag}"
+
   if [[ "${SKIP_DEPS}" != 1 ]]; then
-    echo 'Installing infrastructure dependencies (MariaDB/MySQL, Redis) ...'
-    deps_install
+    echo "Installing infrastructure dependencies (mode: ${DEPS_MODE}) ..."
+    if ! deps_install; then
+      echo 'Warning: dependency setup failed. Telorax is installed; fix deps and run: telorax deps install' >&2
+    fi
   else
     echo 'Skipping dependency installation (INSTALL_SKIP_DEPS=1).'
   fi
-
-  _install_app "${tag}"
 
   _enable_telorax_service
 
   echo
   echo "Installed successfully: telorax ${tag#v}"
   telorax version
-  deps_status
-  telorax doctor
+  if [[ "${SKIP_DEPS}" != 1 ]]; then
+    deps_status || true
+  fi
+  telorax doctor || true
 }
 
 _handle_deps_command() {

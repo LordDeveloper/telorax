@@ -31,8 +31,12 @@ mkdir -p "${ROOT}/opt/telorax/wheels" \
 
 cp "${WHEEL_PATH}" "${ROOT}/opt/telorax/wheels/${WHEEL_NAME}"
 cp packaging/telorax.service "${ROOT}/lib/systemd/system/telorax.service"
+cp packaging/telorax-redis.service "${ROOT}/lib/systemd/system/telorax-redis.service"
+cp packaging/telorax-mariadb.service "${ROOT}/lib/systemd/system/telorax-mariadb.service"
 cp packaging/env.example "${ROOT}/etc/telorax/env.example"
 cp scripts/deps.sh "${ROOT}/usr/share/telorax/deps.sh"
+cp packaging/telorax-redis.service "${ROOT}/usr/share/telorax/telorax-redis.service"
+cp packaging/telorax-mariadb.service "${ROOT}/usr/share/telorax/telorax-mariadb.service"
 chmod 755 "${ROOT}/usr/share/telorax/deps.sh"
 
 cat > "${ROOT}/usr/local/bin/telorax" <<'EOF'
@@ -65,11 +69,18 @@ cp -a ${ROOT}/. %{buildroot}/
 /usr/local/bin/telorax
 /etc/telorax/env.example
 /lib/systemd/system/telorax.service
+/lib/systemd/system/telorax-redis.service
+/lib/systemd/system/telorax-mariadb.service
 /usr/share/telorax/deps.sh
+/usr/share/telorax/telorax-redis.service
+/usr/share/telorax/telorax-mariadb.service
 
 %post
 set -e
-mkdir -p /etc/telorax
+if ! id telorax >/dev/null 2>&1; then
+  useradd --system --home /opt/telorax --shell /sbin/nologin telorax
+fi
+mkdir -p /etc/telorax /opt/telorax/data/mysql /opt/telorax/data/redis /opt/telorax/run /opt/telorax/config
 if [ ! -f /etc/telorax/.env ]; then
   cp /etc/telorax/env.example /etc/telorax/.env
   chmod 600 /etc/telorax/.env
@@ -77,6 +88,7 @@ fi
 python3 -m venv /opt/telorax/venv
 /opt/telorax/venv/bin/pip install --upgrade pip
 /opt/telorax/venv/bin/pip install "/opt/telorax/wheels/${WHEEL_NAME}"
+chown -R telorax:telorax /opt/telorax/venv
 systemctl daemon-reload || true
 SPEC
 

@@ -1,0 +1,17 @@
+[Unit]
+Description=Telorax isolated MariaDB
+After=network.target
+PartOf=telorax.service
+
+[Service]
+Type=simple
+User=mysql
+Group=mysql
+ExecStart=/usr/sbin/mysqld --defaults-file=/opt/telorax/config/my.cnf
+PIDFile=/opt/telorax/run/mysqld.pid
+Restart=on-failure
+RestartSec=5
+TimeoutStartSec=120
+
+[Install]
+WantedBy=multi-user.target
