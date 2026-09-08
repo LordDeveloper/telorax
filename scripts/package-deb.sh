@@ -31,6 +31,9 @@ cp packaging/telorax-redis.service "${PKG_ROOT}/usr/share/telorax/telorax-redis.
 cp packaging/telorax-mariadb.service "${PKG_ROOT}/usr/share/telorax/telorax-mariadb.service"
 chmod 755 "${PKG_ROOT}/usr/share/telorax/deps.sh"
 
+DOCS_SRC="${DOCS_SRC:-${SCRIPT_DIR}/../docs/dist}"
+"${SCRIPT_DIR}/stage-docs.sh" "${DOCS_SRC}" "${PKG_ROOT}/usr/share/telorax/docs"
+
 cat > "${PKG_ROOT}/usr/local/bin/telorax" <<'EOF'
 #!/bin/sh
 exec /opt/telorax/venv/bin/telorax "$@"

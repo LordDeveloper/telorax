@@ -18,7 +18,7 @@ from telorax.core.exceptions.operation import (
     OperationValidationError,
     TargetInaccessibleError,
     TargetNotFoundError,
-    UnsupportedEngagementKindError,
+    UnsupportedOperationTypeError,
 )
 
 __all__ = [
@@ -37,5 +37,5 @@ __all__ = [
     'TargetNotFoundError',
     'TeloraxError',
     'TelegramConnectionError',
-    'UnsupportedEngagementKindError',
+    'UnsupportedOperationTypeError',
 ]

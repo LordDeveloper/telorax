@@ -9,7 +9,7 @@ from telorax.api.app import create_fastapi_app
 from telorax.application.dto.health import ComponentHealthDTO, HealthReportDTO
 from telorax.application.dto.operation import OperationSummaryDTO
 from telorax.bootstrap.container import Container
-from telorax.core.enums import EngagementKind
+from telorax.core.enums import OperationType
 
 
 @pytest.fixture
@@ -21,12 +21,12 @@ def api_client() -> TestClient:
     operation_service.create_operation = AsyncMock(
         return_value=OperationSummaryDTO(
             id=1,
-            engagement_kind=EngagementKind.VIEW,
-            target_count=10,
-            fulfilled_count=0,
+            type=OperationType.VIEW,
+            quantity=10,
+            completed=0,
             state='QUEUED',
             progress_ratio=0.0,
-            remaining_count=10,
+            remaining=10,
         ),
     )
     health_service = AsyncMock()

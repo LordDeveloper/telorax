@@ -3,41 +3,43 @@ from __future__ import annotations
 import hashlib
 import json
 
-from telorax.core.enums import EngagementKind
+from telorax.core.enums import OperationType
 from telorax.domain.value_objects.operation_fingerprint import build_operation_fingerprint
 
 
-def test_fingerprint_is_deterministic() -> None:
-    target_spec = {'peer_ref': '@channel', 'message_ids': [42]}
-    first = build_operation_fingerprint(EngagementKind.VIEW, target_spec)
-    second = build_operation_fingerprint(EngagementKind.VIEW, target_spec)
+def test_fingerprint_is_stable_for_same_input() -> None:
+    extra = {'message_ids': [42]}
+    first = build_operation_fingerprint(OperationType.VIEW, '@channel', extra)
+    second = build_operation_fingerprint(OperationType.VIEW, '@channel', extra)
     assert first == second
 
 
-def test_fingerprint_excludes_transient_fields() -> None:
-    base = {'peer_ref': '@channel', 'message_ids': [42]}
-    with_transient = {**base, 'failure_reason': 'timeout', 'country_filter': 'IR'}
-    assert build_operation_fingerprint(EngagementKind.VIEW, base) == build_operation_fingerprint(
-        EngagementKind.VIEW,
+def test_fingerprint_ignores_transient_extra_keys() -> None:
+    extra = {'message_ids': [42]}
+    with_transient = {**extra, 'failure_reason': 'timeout', 'search_query': 'foo'}
+    baseline = build_operation_fingerprint(OperationType.VIEW, '@channel', extra)
+    with_transient_fp = build_operation_fingerprint(
+        OperationType.VIEW,
+        '@channel',
         with_transient,
     )
+    assert baseline == with_transient_fp
 
 
-def test_fingerprint_differs_by_engagement_kind() -> None:
-    target_spec = {'peer_ref': '@channel', 'message_ids': [42]}
-    view = build_operation_fingerprint(EngagementKind.VIEW, target_spec)
-    vote = build_operation_fingerprint(
-        EngagementKind.POLL_VOTE,
-        {**target_spec, 'poll_option': 1},
+def test_fingerprint_differs_by_operation_type() -> None:
+    extra = {'message_ids': [42]}
+    view = build_operation_fingerprint(OperationType.VIEW, '@channel', extra)
+    poll = build_operation_fingerprint(
+        OperationType.POLL_VOTE,
+        '@channel',
+        {**extra, 'option': 1},
     )
-    assert view != vote
-    assert len(view) == 64
+    assert view != poll
 
 
-def test_fingerprint_is_sha256() -> None:
-    target_spec = {'peer_ref': 123, 'message_ids': [1]}
-    normalized = {'peer_ref': 123, 'message_ids': [1], 'engagement_kind': int(EngagementKind.VIEW)}
-    expected = hashlib.sha256(
-        json.dumps(normalized, sort_keys=True, separators=(',', ':')).encode(),
-    ).hexdigest()
-    assert build_operation_fingerprint(EngagementKind.VIEW, target_spec) == expected
+def test_fingerprint_normalization() -> None:
+    extra = {'message_ids': [1]}
+    normalized = {'type': int(OperationType.VIEW), 'target': 123, 'extra': extra}
+    encoded = json.dumps(normalized, sort_keys=True, separators=(',', ':'))
+    expected = hashlib.sha256(encoded.encode()).hexdigest()
+    assert build_operation_fingerprint(OperationType.VIEW, 123, extra) == expected

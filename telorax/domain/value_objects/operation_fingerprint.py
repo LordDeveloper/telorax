@@ -5,32 +5,35 @@ import json
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from telorax.core.enums import EngagementKind
+    from telorax.core.enums import OperationType
 
-_TRANSIENT_SPEC_KEYS = frozenset({
+_TRANSIENT_EXTRA_KEYS = frozenset({
     'failure_reason',
     'reaction',
-    'option',
     'leave_after_days',
     'read_history',
     'preflight_view',
     'members_only',
-    'country_filter',
     'search_query',
     'impression_count',
 })
 
 
 def build_operation_fingerprint(
-    engagement_kind: EngagementKind,
-    target_spec: dict[str, Any],
+    operation_type: OperationType,
+    target: str | int,
+    extra: dict[str, Any],
 ) -> str:
     """Stable hash for dedup using only structurally relevant fields."""
-    normalized = {
+    normalized_extra = {
         key: value
-        for key, value in target_spec.items()
-        if key not in _TRANSIENT_SPEC_KEYS
+        for key, value in extra.items()
+        if key not in _TRANSIENT_EXTRA_KEYS
     }
-    normalized['engagement_kind'] = int(engagement_kind)
+    normalized = {
+        'type': int(operation_type),
+        'target': target,
+        'extra': normalized_extra,
+    }
     encoded = json.dumps(normalized, sort_keys=True, separators=(',', ':'))
     return hashlib.sha256(encoded.encode()).hexdigest()

@@ -47,6 +47,26 @@ jobs:
       - name: Pytest
         run: pytest --cov=telorax --cov-report=term-missing
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+
+      - name: Build API docs
+        run: |
+          chmod +x scripts/build-docs.sh scripts/stage-docs.sh
+          scripts/build-docs.sh
+
+      - name: Upload docs
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: telorax-docs
+          path: docs/dist/
+          if-no-files-found: error
+          retention-days: 1
+
       - name: Build wheel
         if: github.event_name == 'push'
         run: |
@@ -128,6 +148,12 @@ jobs:
           name: telorax-wheel
           path: dist
 
+      - name: Download docs
+        uses: actions/download-artifact@v4
+        with:
+          name: telorax-docs
+          path: docs/dist
+
       - name: Install packaging tools
         run: |
           sudo apt-get update
@@ -139,7 +165,7 @@ jobs:
           ARCH: ${{ matrix.arch }}
         run: |
           WHEEL="$(ls -1 dist/*.whl | head -n 1)"
-          chmod +x scripts/package-deb.sh scripts/package-rpm.sh scripts/release-name.sh
+          chmod +x scripts/package-deb.sh scripts/package-rpm.sh scripts/release-name.sh scripts/stage-docs.sh
           scripts/package-deb.sh "${VERSION}" "${ARCH}" "${WHEEL}"
           scripts/package-rpm.sh "${VERSION}" "${ARCH}" "${WHEEL}"
           ls -lh "${RELEASE_REPO_NAME}.${VERSION}-${ARCH}".*

@@ -29,18 +29,18 @@ class OperationService:
 
     async def create_operation(self, dto: CreateOperationDTO) -> OperationSummaryDTO:
         validate_create_operation(dto)
-        fingerprint = build_operation_fingerprint(dto.engagement_kind, dto.target_spec)
+        extra = dict(dto.extra)
+        fingerprint = build_operation_fingerprint(dto.type, dto.target, extra)
         operation = Operation(
             id=0,
-            engagement_kind=dto.engagement_kind,
-            target_count=dto.target_count,
-            fulfilled_count=0,
-            target_spec=dto.target_spec,
+            type=dto.type,
+            quantity=dto.quantity,
+            completed=0,
+            target=dto.target,
+            extra=extra,
             state=OperationState.QUEUED,
-            dedup_fingerprint=fingerprint,
-            priority=dto.priority,
-            country_filter=dto.country_filter,
-            source_label=dto.source_label,
+            fingerprint=fingerprint,
+            country=dto.country,
         )
         async with SQLAlchemyUnitOfWork(self._session_factory) as unit_of_work:
             created = await unit_of_work.operations.create(operation)
@@ -51,10 +51,10 @@ class OperationService:
 def _to_summary(operation: Operation) -> OperationSummaryDTO:
     return OperationSummaryDTO(
         id=operation.id,
-        engagement_kind=operation.engagement_kind,
-        target_count=operation.target_count,
-        fulfilled_count=operation.fulfilled_count,
+        type=operation.type,
+        quantity=operation.quantity,
+        completed=operation.completed,
+        remaining=operation.remaining,
         state=operation.state.name,
         progress_ratio=operation.progress_ratio,
-        remaining_count=operation.remaining_count,
     )

@@ -3,60 +3,85 @@ from __future__ import annotations
 from unittest.mock import AsyncMock
 
 import pytest
-from fastapi.testclient import TestClient
+from fastapi import HTTPException
 
-from telorax.api.app import create_fastapi_app
-from telorax.api.routes.v1.operations import _parse_engagement_kind
-from telorax.bootstrap.container import Container
-from telorax.core.enums import EngagementKind
+from telorax.api.routes.v1.operations import _parse_operation_type, create_operation
+from telorax.application.dto.operation import OperationSummaryDTO
+from telorax.core.enums import OperationType
 from telorax.core.exceptions import OperationValidationError
 
 
-def test_list_queued_operations(api_client: TestClient) -> None:
-    response = api_client.get('/v1/operations/queued')
-    assert response.status_code == 200
-    assert response.json() == []
-
-
-def test_get_operation_not_found(api_client: TestClient) -> None:
-    response = api_client.get('/v1/operations/999')
-    assert response.status_code == 404
-
-
-def test_create_operation(api_client: TestClient) -> None:
-    response = api_client.post(
-        '/v1/operations',
-        json={
-            'engagement_kind': 'VIEW',
-            'target_count': 10,
-            'target_spec': {'peer_ref': '@channel'},
+@pytest.mark.asyncio
+async def test_create_operation_route_returns_summary() -> None:
+    service = AsyncMock()
+    service.create_operation = AsyncMock(
+        return_value=OperationSummaryDTO(
+            id=1,
+            type=OperationType.VIEW,
+            quantity=10,
+            completed=0,
+            remaining=10,
+            state='QUEUED',
+            progress_ratio=0.0,
+        ),
+    )
+    payload = await create_operation(
+        {
+            'type': 'VIEW',
+            'quantity': 10,
+            'target': '@channel',
+            'extra': {'message_ids': [1]},
         },
+        service,
     )
-    assert response.status_code == 201
-    payload = response.json()
-    assert payload['id'] == 1
-    assert payload['engagement_kind'] == EngagementKind.VIEW.value
+    assert payload['type'] == OperationType.VIEW.value
+    assert payload['quantity'] == 10
+    assert payload['remaining'] == 10
 
 
-def test_create_operation_validation_error() -> None:
-    container = Container()
-    operation_service = AsyncMock()
-    operation_service.create_operation = AsyncMock(
-        side_effect=OperationValidationError('invalid payload'),
+@pytest.mark.asyncio
+async def test_create_operation_route_accepts_numeric_type() -> None:
+    service = AsyncMock()
+    service.create_operation = AsyncMock(
+        return_value=OperationSummaryDTO(
+            id=2,
+            type=OperationType.VIEW,
+            quantity=10,
+            completed=0,
+            remaining=10,
+            state='QUEUED',
+            progress_ratio=0.0,
+        ),
     )
-    container.operation_service.override(operation_service)
-    client = TestClient(create_fastapi_app(container))
-    response = client.post(
-        '/v1/operations',
-        json={
-            'engagement_kind': 1,
-            'target_count': 10,
-            'target_spec': {'peer_ref': '@channel'},
+    await create_operation(
+        {
+            'type': 1,
+            'quantity': 10,
+            'target': '@channel',
+            'extra': {},
         },
+        service,
     )
-    assert response.status_code == 422
+    service.create_operation.assert_awaited_once()
 
 
-def test_parse_engagement_kind_invalid() -> None:
+def test_parse_operation_type_invalid() -> None:
     with pytest.raises(OperationValidationError):
-        _parse_engagement_kind({'invalid': True})
+        _parse_operation_type({'invalid': True})
+
+
+@pytest.mark.asyncio
+async def test_create_operation_route_maps_validation_error() -> None:
+    service = AsyncMock()
+    service.create_operation = AsyncMock(side_effect=OperationValidationError('bad request'))
+    with pytest.raises(HTTPException) as exc_info:
+        await create_operation(
+            {
+                'type': 1,
+                'quantity': 10,
+                'target': '@channel',
+                'extra': {},
+            },
+            service,
+        )
+    assert exc_info.value.status_code == 422

@@ -6,10 +6,11 @@ from telorax.core.logging.context import (
     bind_cycle_id,
     mask_phone,
 )
-from telorax.domain.value_objects.target_spec import (
-    ReactionTargetSpec,
-    SubscribeTargetSpec,
-    ViewTargetSpec,
+from telorax.domain.value_objects.operation_extra import (
+    BotStart,
+    Reaction,
+    Subscribe,
+    View,
 )
 
 
@@ -35,10 +36,12 @@ def test_bind_context_accepts_kwargs() -> None:
     bind_context(account_id=1)
 
 
-def test_target_spec_dataclasses() -> None:
-    view = ViewTargetSpec(peer_ref='@channel', message_ids=[1, 2])
-    subscribe = SubscribeTargetSpec(peer_ref='@channel', auto_unsubscribe_days=7)
-    reaction = ReactionTargetSpec(peer_ref='@channel', emoji='👍')
+def test_operation_extra_dataclasses() -> None:
+    view = View(message_ids=[1, 2])
+    subscribe = Subscribe(auto_unsubscribe_days=7)
+    reaction = Reaction(emoji='👍')
+    bot = BotStart(payload='start')
     assert view.members_only is False
     assert subscribe.read_history_on_join is False
     assert reaction.preflight_view is False
+    assert bot.payload == 'start'

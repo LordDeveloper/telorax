@@ -1,8 +1,8 @@
 from enum import IntEnum
 
 
-class EngagementKind(IntEnum):
-    """Kind of Telegram engagement requested by an operation."""
+class OperationType(IntEnum):
+    """Kind of Telegram action requested by an operation."""
 
     VIEW = 1
     SUBSCRIBE = 2

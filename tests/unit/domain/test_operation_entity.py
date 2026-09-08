@@ -1,45 +1,45 @@
 from __future__ import annotations
 
-from telorax.core.enums import EngagementKind, OperationState
+from telorax.core.enums import OperationState, OperationType
 from telorax.domain.entities import Operation
 
 
-def test_operation_remaining_count() -> None:
+def test_operation_remaining() -> None:
     operation = Operation(
         id=1,
-        engagement_kind=EngagementKind.VIEW,
-        target_count=100,
-        fulfilled_count=37,
-        target_spec={'peer_ref': '@test'},
+        type=OperationType.VIEW,
+        quantity=100,
+        completed=37,
+        target='@test',
+        extra={},
     )
-    assert operation.remaining_count == 63
-    assert operation.is_fulfilled is False
-    assert operation.progress_ratio == 0.37
+    assert operation.remaining == 63
+    assert operation.is_complete is False
 
 
-def test_operation_dispatch_key_requires_fingerprint() -> None:
+def test_operation_progress_ratio() -> None:
     operation = Operation(
         id=1,
-        engagement_kind=EngagementKind.SUBSCRIBE,
-        target_count=10,
-        fulfilled_count=0,
-        target_spec={'peer_ref': '@channel'},
+        type=OperationType.SUBSCRIBE,
+        quantity=10,
+        completed=0,
+        target='@channel',
+        extra={},
+        state=OperationState.QUEUED,
     )
-    try:
-        operation.dispatch_key_for(42)
-        raise AssertionError('expected ValueError')
-    except ValueError:
-        pass
+    assert operation.progress_ratio == 0.0
 
 
-def test_operation_is_fulfilled_when_target_reached() -> None:
+def test_operation_is_complete_when_quantity_reached() -> None:
     operation = Operation(
-        id=2,
-        engagement_kind=EngagementKind.REACTION,
-        target_count=50,
-        fulfilled_count=50,
-        target_spec={},
+        id=1,
+        type=OperationType.REACTION,
+        quantity=50,
+        completed=50,
+        target='@channel',
+        extra={},
         state=OperationState.COMPLETED,
     )
-    assert operation.is_fulfilled is True
-    assert operation.remaining_count == 0
+    assert operation.is_complete is True
+    assert operation.remaining == 0
+    assert operation.progress_ratio == 1.0

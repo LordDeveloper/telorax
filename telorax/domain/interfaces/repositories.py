@@ -37,7 +37,7 @@ class OperationRepository(Protocol):
         self,
         operation_id: int,
         *,
-        fulfilled_count: int,
+        completed: int,
         state: OperationState,
     ) -> None: ...
 

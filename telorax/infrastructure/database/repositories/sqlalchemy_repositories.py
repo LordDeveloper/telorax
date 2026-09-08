@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import or_, select
 
-from telorax.core.enums import AccountState, EngagementKind, OperationState
+from telorax.core.enums import AccountState, OperationState, OperationType
 from telorax.domain.entities import Account, Operation
 from telorax.domain.interfaces.repositories import AccountRepository, OperationRepository
 from telorax.infrastructure.database.models import AccountModel, OperationModel
@@ -43,19 +43,26 @@ def _to_account(model: AccountModel) -> Account:
     )
 
 
+def _normalize_target(target: str | int) -> str:
+    return str(target)
+
+
+def _parse_target(target: str) -> str | int:
+    return int(target) if target.isdigit() else target
+
+
 def _to_operation(model: OperationModel) -> Operation:
     return Operation(
         id=model.id,
-        engagement_kind=EngagementKind(model.engagement_kind),
-        target_count=model.target_count,
-        fulfilled_count=model.fulfilled_count,
-        target_spec=model.target_spec or {},
+        type=OperationType(model.operation_type),
+        quantity=model.quantity,
+        completed=model.completed,
+        target=_parse_target(model.target),
+        extra=model.extra or {},
         state=OperationState(model.state),
-        dedup_fingerprint=model.dedup_fingerprint,
+        fingerprint=model.fingerprint,
         retry_attempts=model.retry_attempts,
-        priority=model.priority,
-        country_filter=model.country_filter,
-        source_label=model.source_label,
+        country=model.country,
         failure_summary=model.failure_summary,
         scheduled_at=model.scheduled_at,
         started_at=model.started_at,
@@ -147,22 +154,21 @@ class SQLAlchemyOperationRepository(OperationRepository):
         result = await self._session.execute(
             select(OperationModel)
             .where(OperationModel.state == OperationState.QUEUED.value)
-            .order_by(OperationModel.priority.desc(), OperationModel.id.asc())
+            .order_by(OperationModel.id.asc())
             .limit(limit),
         )
         return [_to_operation(model) for model in result.scalars()]
 
     async def create(self, operation: Operation) -> Operation:
         model = OperationModel(
-            engagement_kind=operation.engagement_kind.value,
-            target_count=operation.target_count,
-            fulfilled_count=operation.fulfilled_count,
-            target_spec=operation.target_spec,
+            operation_type=operation.type.value,
+            quantity=operation.quantity,
+            completed=operation.completed,
+            target=_normalize_target(operation.target),
+            extra=operation.extra,
             state=operation.state.value,
-            dedup_fingerprint=operation.dedup_fingerprint,
-            priority=operation.priority,
-            country_filter=operation.country_filter,
-            source_label=operation.source_label,
+            fingerprint=operation.fingerprint,
+            country=operation.country,
         )
         self._session.add(model)
         await self._session.flush()
@@ -172,10 +178,10 @@ class SQLAlchemyOperationRepository(OperationRepository):
         self,
         operation_id: int,
         *,
-        fulfilled_count: int,
+        completed: int,
         state: OperationState,
     ) -> None:
         model = await self._session.get(OperationModel, operation_id)
         if model:
-            model.fulfilled_count = fulfilled_count
+            model.completed = completed
             model.state = state.value

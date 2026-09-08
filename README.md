@@ -11,13 +11,13 @@ Built in Python with a proper service layer, async I/O, and packaging that actua
 ## What you get
 
 - **Account pool management** — operational state, rate limits, reliability scoring
-- **Operations queue** — submit batch work (`target_count` + engagement kind + target spec), track progress
+- **Operations queue** — submit batch work (`type` + `quantity` + `target` + `extra`), track progress
 - **HTTP API** — `/v1/operations` for creating and inspecting queued work
 - **CLI + TUI** — `telorax` dashboard for local ops, `telorax serve` for headless production
 - **Sensible installs** — one-liner script, `.deb`, `.rpm`, or wheel; amd64 and arm64
 - **Deps handled** — optional auto-install of MariaDB/MySQL and Redis on Debian/Ubuntu
 
-Supported engagement kinds: `VIEW`, `SUBSCRIBE`, `POLL_VOTE`, `REACTION`, `SPONSORED`, `SEARCH_VIEW`, `BUTTON_CLICK`, `BOT_START`.
+Supported operation types (IntEnum): `VIEW=1`, `SUBSCRIBE=2`, `POLL_VOTE=3`, `REACTION=4`, `SPONSORED=5`, `SEARCH_VIEW=6`, `BUTTON_CLICK=7`, `BOT_START=8`.
 
 ---
 
@@ -207,9 +207,11 @@ Create an operation (e.g. 500 views on a channel):
 curl -s -X POST localhost:8000/v1/operations \
   -H 'Content-Type: application/json' \
   -d '{
-    "engagement_kind": "VIEW",
-    "target_count": 500,
-    "target_spec": {"peer_ref": "@yourchannel"}
+    "type": 1,
+    "quantity": 500,
+    "target": "@yourchannel",
+    "extra": {"message_ids": [42]},
+    "country": "IR"
   }'
 ```
 
@@ -271,6 +273,30 @@ mypy telorax/
 ```
 
 Architecture: domain entities → application services → infrastructure repos → FastAPI / CLI. DI via `dependency-injector`.
+
+---
+
+## API documentation (React)
+
+Interactive docs and API playground live in `docs/` (React + styled-components, JavaScript):
+
+```bash
+cd docs
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173/docs/` — Vite proxies `/v1` to `http://127.0.0.1:8000`.
+
+**Production:** build static assets and serve them from the API:
+
+```bash
+cd docs && npm run build
+telorax serve
+# → http://localhost:8000/docs/  (interactive API reference + playground)
+```
+
+Pages: Overview, Operation types, Endpoints reference, Live playground (send requests, view JSON, copy cURL).
 
 ---
 

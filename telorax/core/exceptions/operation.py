@@ -18,10 +18,10 @@ class EngagementExecutionError(DomainError):
         self.code = code
 
 
-class UnsupportedEngagementKindError(DomainError):
-    def __init__(self, engagement_kind: str) -> None:
-        super().__init__(f'Unsupported engagement kind: {engagement_kind}')
-        self.engagement_kind = engagement_kind
+class UnsupportedOperationTypeError(DomainError):
+    def __init__(self, operation_type: str) -> None:
+        super().__init__(f'Unsupported operation type: {operation_type}')
+        self.operation_type = operation_type
 
 
 class TargetNotFoundError(DomainError):

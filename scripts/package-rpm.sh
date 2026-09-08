@@ -39,6 +39,9 @@ cp packaging/telorax-redis.service "${ROOT}/usr/share/telorax/telorax-redis.serv
 cp packaging/telorax-mariadb.service "${ROOT}/usr/share/telorax/telorax-mariadb.service"
 chmod 755 "${ROOT}/usr/share/telorax/deps.sh"
 
+DOCS_SRC="${DOCS_SRC:-${SCRIPT_DIR}/../docs/dist}"
+"${SCRIPT_DIR}/stage-docs.sh" "${DOCS_SRC}" "${ROOT}/usr/share/telorax/docs"
+
 cat > "${ROOT}/usr/local/bin/telorax" <<'EOF'
 #!/bin/sh
 exec /opt/telorax/venv/bin/telorax "$@"
@@ -74,6 +77,7 @@ cp -a ${ROOT}/. %{buildroot}/
 /usr/share/telorax/deps.sh
 /usr/share/telorax/telorax-redis.service
 /usr/share/telorax/telorax-mariadb.service
+/usr/share/telorax/docs
 
 %post
 set -e

@@ -9,3 +9,6 @@ htmlcov/
 .ruff_cache/
 .env
 *.deb
+docs/node_modules/
+docs/dist/
+docs/*.tsbuildinfo

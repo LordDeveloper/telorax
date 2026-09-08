@@ -1,37 +1,44 @@
 from __future__ import annotations
 
-from typing import Any
-
 from telorax.application.dto.operation import CreateOperationDTO
-from telorax.core.enums import EngagementKind
+from telorax.core.enums import OperationType
 from telorax.core.exceptions import OperationValidationError
+from telorax.domain.value_objects.operation_extra import parse_operation_extra
+
+_TARGET_REQUIRED_TYPES = {
+    OperationType.VIEW,
+    OperationType.SUBSCRIBE,
+    OperationType.POLL_VOTE,
+    OperationType.REACTION,
+    OperationType.SPONSORED,
+    OperationType.SEARCH_VIEW,
+    OperationType.BUTTON_CLICK,
+    OperationType.BOT_START,
+}
+
+
+_ISO_COUNTRY_CODE_LEN = 2
 
 
 def validate_create_operation(dto: CreateOperationDTO) -> None:
-    if dto.target_count <= 0:
-        raise OperationValidationError('target_count must be greater than zero')
+    if dto.quantity <= 0:
+        raise OperationValidationError('quantity must be greater than zero')
 
-    if not dto.target_spec:
-        raise OperationValidationError('target_spec is required')
+    if dto.type in _TARGET_REQUIRED_TYPES and dto.target in ('', None):
+        raise OperationValidationError('target is required for this operation type')
 
-    if dto.engagement_kind in {
-        EngagementKind.VIEW,
-        EngagementKind.SUBSCRIBE,
-        EngagementKind.REACTION,
-        EngagementKind.SPONSORED,
-        EngagementKind.SEARCH_VIEW,
-        EngagementKind.BUTTON_CLICK,
-        EngagementKind.BOT_START,
-    } and 'peer_ref' not in dto.target_spec:
-        raise OperationValidationError('target_spec.peer_ref is required for this engagement kind')
+    if not isinstance(dto.target, (str, int)):
+        raise OperationValidationError('target must be a string or integer')
 
-    if dto.engagement_kind == EngagementKind.POLL_VOTE and 'option' not in dto.target_spec:
-        raise OperationValidationError('target_spec.option is required for POLL_VOTE operations')
+    if isinstance(dto.target, str) and not dto.target.strip():
+        raise OperationValidationError('target must not be empty')
 
-    _validate_target_spec_values(dto.target_spec)
+    if dto.extra is None:
+        raise OperationValidationError('extra is required')
 
+    if dto.country is not None and (
+        not isinstance(dto.country, str) or len(dto.country) != _ISO_COUNTRY_CODE_LEN
+    ):
+        raise OperationValidationError('country must be a 2-letter ISO code')
 
-def _validate_target_spec_values(target_spec: dict[str, Any]) -> None:
-    peer_ref = target_spec.get('peer_ref')
-    if peer_ref is not None and not isinstance(peer_ref, (str, int)):
-        raise OperationValidationError('target_spec.peer_ref must be a string or integer')
+    parse_operation_extra(dto.type, dict(dto.extra))
