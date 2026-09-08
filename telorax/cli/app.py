@@ -7,6 +7,7 @@ from telorax.cli.commands.deps import deps_app
 from telorax.cli.commands.migrate import migrate_app
 from telorax.cli.commands.serve import serve_app
 from telorax.cli.commands.service import service_app
+from telorax.cli.commands.upgrade import upgrade_app
 from telorax.cli.commands.version import version_command
 from telorax.cli.console import is_interactive
 from telorax.cli.menu import run_interactive
@@ -23,6 +24,7 @@ app.add_typer(deps_app, name='deps')
 app.add_typer(migrate_app, name='migrate')
 app.add_typer(serve_app, name='serve')
 app.add_typer(service_app, name='service')
+app.add_typer(upgrade_app, name='upgrade')
 
 
 @app.callback(invoke_without_command=True)

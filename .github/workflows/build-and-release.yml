@@ -247,6 +247,7 @@ jobs:
         run: |
           chmod +x scripts/release-name.sh
           cp scripts/install.sh release-assets/
+          cp scripts/upgrade.sh release-assets/
           cp scripts/deps.sh release-assets/
           cp scripts/release-name.sh release-assets/
           (
@@ -295,5 +296,6 @@ jobs:
             release-assets/telorax.*-arm64.rpm
             release-assets/SHA256SUMS
             release-assets/install.sh
+            release-assets/upgrade.sh
             release-assets/deps.sh
             release-assets/release-name.sh

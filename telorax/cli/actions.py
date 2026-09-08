@@ -12,8 +12,10 @@ from telorax.application.dto.health import HealthReportDTO
 from telorax.bootstrap.container import Container
 from telorax.core.config.settings import Settings, default_env_path
 from telorax.core.network import is_port_open, probe_host
+from telorax.core.version import version_lt
 
 SERVICE_UNIT = 'telorax.service'
+GITHUB_REPO = 'LordDeveloper/telorax'
 
 
 def run_doctor() -> None:
@@ -66,6 +68,60 @@ def run_migrations() -> None:
     from telorax.cli.commands.migrate import run_migrations as migrate
 
     migrate()
+
+
+def fetch_latest_release_version() -> str:
+    response = httpx.get(
+        f'https://api.github.com/repos/{GITHUB_REPO}/releases/latest',
+        timeout=10.0,
+        headers={'Accept': 'application/vnd.github+json'},
+    )
+    response.raise_for_status()
+    payload = response.json()
+    tag = payload.get('tag_name')
+    if not isinstance(tag, str) or not tag:
+        msg = 'Could not resolve latest release tag.'
+        raise RuntimeError(msg)
+    return tag.lstrip('v')
+
+
+def show_upgrade_status() -> None:
+    script = _upgrade_script_path()
+    bash = shutil.which('bash')
+    if script.is_file() and bash is not None:
+        subprocess.run([bash, str(script), 'check'], check=False)
+        return
+
+    from telorax import __version__
+
+    installed = __version__
+    print(f'Installed: {installed}')
+
+    try:
+        latest = fetch_latest_release_version()
+    except Exception as exc:
+        print(f'Latest:    unavailable ({exc})')
+        return
+
+    print(f'Latest:    {latest}')
+    if version_lt(installed, latest):
+        print('Status:    update available')
+    elif installed == latest:
+        print('Status:    up to date')
+    else:
+        print('Status:    installed version is ahead of latest release')
+
+
+def run_upgrade(action: str) -> None:
+    script = _upgrade_script_path()
+    bash = shutil.which('bash')
+    if bash is None:
+        msg = 'bash is required to upgrade Telorax.'
+        raise RuntimeError(msg)
+    if not script.is_file():
+        msg = 'upgrade.sh not found. Reinstall Telorax or run install.sh from release assets.'
+        raise FileNotFoundError(msg)
+    subprocess.run([bash, str(script), action], check=True)
 
 
 def run_serve_foreground() -> None:
@@ -124,6 +180,17 @@ def _deps_script_path() -> Path:
             return path
     msg = 'deps.sh not found. Reinstall Telorax or run install.sh from release assets.'
     raise FileNotFoundError(msg)
+
+
+def _upgrade_script_path() -> Path:
+    candidates = (
+        Path('/usr/share/telorax/upgrade.sh'),
+        Path(__file__).resolve().parents[2] / 'scripts' / 'upgrade.sh',
+    )
+    for path in candidates:
+        if path.is_file():
+            return path
+    return candidates[1]
 
 
 def _systemctl_path() -> str:

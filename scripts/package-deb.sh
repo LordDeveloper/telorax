@@ -27,11 +27,17 @@ cp packaging/telorax-redis.service "${PKG_ROOT}/lib/systemd/system/telorax-redis
 cp packaging/telorax-mariadb.service "${PKG_ROOT}/lib/systemd/system/telorax-mariadb.service"
 cp packaging/env.example "${PKG_ROOT}/etc/telorax/env.example"
 cp scripts/deps.sh "${PKG_ROOT}/usr/share/telorax/deps.sh"
+cp scripts/install.sh "${PKG_ROOT}/usr/share/telorax/install.sh"
+cp scripts/upgrade.sh "${PKG_ROOT}/usr/share/telorax/upgrade.sh"
+cp scripts/release-name.sh "${PKG_ROOT}/usr/share/telorax/release-name.sh"
 cp alembic.ini "${PKG_ROOT}/usr/share/telorax/alembic.ini"
 cp -r migrations "${PKG_ROOT}/usr/share/telorax/migrations"
 cp packaging/telorax-redis.service "${PKG_ROOT}/usr/share/telorax/telorax-redis.service"
 cp packaging/telorax-mariadb.service "${PKG_ROOT}/usr/share/telorax/telorax-mariadb.service"
-chmod 755 "${PKG_ROOT}/usr/share/telorax/deps.sh"
+chmod 755 "${PKG_ROOT}/usr/share/telorax/deps.sh" \
+  "${PKG_ROOT}/usr/share/telorax/install.sh" \
+  "${PKG_ROOT}/usr/share/telorax/upgrade.sh" \
+  "${PKG_ROOT}/usr/share/telorax/release-name.sh"
 
 DOCS_SRC="${DOCS_SRC:-${SCRIPT_DIR}/../docs/dist}"
 "${SCRIPT_DIR}/stage-docs.sh" "${DOCS_SRC}" "${PKG_ROOT}/usr/share/telorax/docs"

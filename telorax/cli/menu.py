@@ -207,6 +207,31 @@ def _serve_menu() -> None:
             _run_foreground_serve()
 
 
+def _upgrade_menu() -> None:
+    while True:
+        render_header('Upgrade')
+        picked = select(
+            [
+                Choice('check', 'Check for updates', CYAN, '1'),
+                Choice('run', 'Upgrade to latest', GREEN, '2'),
+                Choice('migrate', 'Run database migrations', YELLOW, '3'),
+                Choice('back', 'Back', WHITE, '0'),
+            ],
+        )
+        if picked in {None, 'back'}:
+            return
+        if picked == 'check':
+            _run_action('Version check', actions.show_upgrade_status)
+            continue
+        if picked == 'run':
+            if not confirm('Download and install the latest Telorax release?', default=True):
+                continue
+            _run_action('Upgrade', lambda: actions.run_upgrade('run'))
+            continue
+        if picked == 'migrate':
+            _run_action('Migrations', actions.run_migrations)
+
+
 def _run_foreground_serve() -> None:
     show_cursor()
     clear_screen()
@@ -242,7 +267,7 @@ def run_interactive() -> int:
                     Choice('wizard', 'Setup wizard', GREEN, '1'),
                     Choice('deps', 'Dependencies', CYAN, '2'),
                     Choice('config', 'Configuration', YELLOW, '3'),
-                    Choice('migrate', 'Run migrations', WHITE, '4'),
+                    Choice('upgrade', 'Upgrade / migrate', CYAN, '4'),
                     Choice('doctor', 'Diagnostics', MAGENTA, '5'),
                     Choice('serve', 'Serve', GREEN, '6'),
                     Choice('exit', 'Exit', WHITE, '0'),
@@ -257,8 +282,8 @@ def run_interactive() -> int:
                 _deps_menu()
             elif picked == 'config':
                 _config_menu()
-            elif picked == 'migrate':
-                _run_action('Migrations', actions.run_migrations)
+            elif picked == 'upgrade':
+                _upgrade_menu()
             elif picked == 'doctor':
                 _run_action('Diagnostics', _show_doctor)
             elif picked == 'serve':
