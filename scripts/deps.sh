@@ -8,7 +8,7 @@ ENV_FILE="${ENV_FILE:-${CONFIG_DIR}/.env}"
 TELORAX_ROOT="${TELORAX_ROOT:-/opt/telorax}"
 DEPS_MODE="${DEPS_MODE:-local}"  # local | system
 LOCAL_MYSQL_PORT="${LOCAL_MYSQL_PORT:-3307}"
-LOCAL_REDIS_PORT="${LOCAL_REDIS_PORT:-6380}"
+DEPS_SCRIPT_VERSION='2'
 
 _load_env_value() {
   local key="$1"
@@ -69,24 +69,21 @@ _mysql_client() {
   echo mysql
 }
 
-_mysql_root_cmd() {
-  local -n _cmd_ref=$1
+_mysql_root_exec() {
   local mysql_bin
   mysql_bin="$(_mysql_client)"
   if [[ "${DEPS_MODE}" == local ]]; then
-    _cmd_ref=("${mysql_bin}" --protocol=socket --socket="${TELORAX_ROOT}/run/mysqld.sock" -uroot)
+    "${mysql_bin}" --protocol=socket --socket="${TELORAX_ROOT}/run/mysqld.sock" -uroot "$@"
   else
-    _cmd_ref=("${mysql_bin}" --protocol=socket -uroot)
+    "${mysql_bin}" --protocol=socket -uroot "$@"
   fi
 }
 
 _wait_for_mysql() {
-  local mysql_cmd=()
   local attempt
 
   for attempt in $(seq 1 30); do
-    _mysql_root_cmd mysql_cmd
-    if "${mysql_cmd[@]}" -e 'SELECT 1' >/dev/null 2>&1; then
+    if _mysql_root_exec -e 'SELECT 1' >/dev/null 2>&1; then
       return 0
     fi
     sleep 1
@@ -305,7 +302,7 @@ _deps_install_system() {
 _provision_database() {
   _ensure_root
 
-  local db_name db_user db_password mysql_cmd=()
+  local db_name db_user db_password
   db_name="$(_load_env_value DB_NAME telorax)"
   db_user="$(_load_env_value DB_USER telorax)"
   db_password="$(_load_env_value DB_PASSWORD secret)"
@@ -319,9 +316,7 @@ _provision_database() {
     _wait_for_mysql
   fi
 
-  _mysql_root_cmd mysql_cmd
-
-  "${mysql_cmd[@]}" <<SQL
+  _mysql_root_exec <<SQL
 CREATE DATABASE IF NOT EXISTS \`${db_name}\`
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
@@ -349,6 +344,7 @@ deps_install() {
 }
 
 deps_status() {
+  echo "Deps script: v${DEPS_SCRIPT_VERSION}"
   if [[ "${DEPS_MODE}" == local ]]; then
     echo "Mode: local (${TELORAX_ROOT})"
     echo "MariaDB (telorax-mariadb): $(systemctl is-active telorax-mariadb.service 2>/dev/null || echo 'missing')"
@@ -363,16 +359,15 @@ deps_status() {
   fi
 
   if command -v "$(_mysql_client)" >/dev/null 2>&1; then
-    local db_name db_user mysql_cmd=()
+    local db_name db_user
     db_name="$(_load_env_value DB_NAME telorax)"
     db_user="$(_load_env_value DB_USER telorax)"
-    _mysql_root_cmd mysql_cmd
-    if "${mysql_cmd[@]}" -e "USE \`${db_name}\`;" >/dev/null 2>&1; then
+    if _mysql_root_exec -e "USE \`${db_name}\`;" >/dev/null 2>&1; then
       echo "Database '${db_name}': OK"
     else
       echo "Database '${db_name}': missing"
     fi
-    if "${mysql_cmd[@]}" -Nse "SELECT 1 FROM mysql.user WHERE User='${db_user}' AND Host IN ('localhost', '127.0.0.1');" | grep -q 1; then
+    if _mysql_root_exec -Nse "SELECT 1 FROM mysql.user WHERE User='${db_user}' AND Host IN ('localhost', '127.0.0.1');" | grep -q 1; then
       echo "Database user '${db_user}': OK"
     else
       echo "Database user '${db_user}': missing"
