@@ -174,34 +174,34 @@ def _setup_wizard() -> None:
     pause()
 
 
-def _service_menu() -> None:
+def _serve_menu() -> None:
     while True:
-        render_header('Telorax service')
+        render_header('Serve')
         picked = select(
             [
                 Choice('status', 'Show status', CYAN, '1'),
-                Choice('start', 'Start service', GREEN, '2'),
-                Choice('stop', 'Stop service', RED, '3'),
-                Choice('restart', 'Restart service', YELLOW, '4'),
-                Choice('foreground', 'Start server (foreground)', GREEN, '5'),
+                Choice('start', 'Start (persistent)', GREEN, '2'),
+                Choice('stop', 'Stop', RED, '3'),
+                Choice('restart', 'Restart', YELLOW, '4'),
+                Choice('foreground', 'Run in foreground (debug)', WHITE, '5'),
                 Choice('back', 'Back', WHITE, '0'),
             ],
         )
         if picked in {None, 'back'}:
             return
         if picked == 'status':
-            _run_action('Service status', lambda: actions.run_service('status'))
+            _run_action('Serve status', lambda: actions.run_serve_daemon('status'))
             continue
         if picked == 'start':
-            _run_action('Start service', lambda: actions.run_service('start'))
+            _run_action('Start serve', lambda: actions.run_serve_daemon('start'))
             continue
         if picked == 'stop':
-            if not confirm('Stop Telorax service?', default=False):
+            if not confirm('Stop Telorax and disable auto-start on boot?', default=False):
                 continue
-            _run_action('Stop service', lambda: actions.run_service('stop'))
+            _run_action('Stop serve', lambda: actions.run_serve_daemon('stop'))
             continue
         if picked == 'restart':
-            _run_action('Restart service', lambda: actions.run_service('restart'))
+            _run_action('Restart serve', lambda: actions.run_serve_daemon('restart'))
             continue
         if picked == 'foreground':
             _run_foreground_serve()
@@ -214,7 +214,7 @@ def _run_foreground_serve() -> None:
     _print(paint(' Press Ctrl+C to stop and return to the menu.', DIM))
     _print()
     try:
-        actions.run_serve()
+        actions.run_serve_foreground()
     except RuntimeError as exc:
         _print(paint(f'\n {exc}', RED))
         pause()
@@ -244,8 +244,7 @@ def run_interactive() -> int:
                     Choice('config', 'Configuration', YELLOW, '3'),
                     Choice('migrate', 'Run migrations', WHITE, '4'),
                     Choice('doctor', 'Diagnostics', MAGENTA, '5'),
-                    Choice('service', 'Telorax service', GREEN, '6'),
-                    Choice('serve', 'Start API server', CYAN, '7'),
+                    Choice('serve', 'Serve', GREEN, '6'),
                     Choice('exit', 'Exit', WHITE, '0'),
                 ],
             )
@@ -262,10 +261,8 @@ def run_interactive() -> int:
                 _run_action('Migrations', actions.run_migrations)
             elif picked == 'doctor':
                 _run_action('Diagnostics', _show_doctor)
-            elif picked == 'service':
-                _service_menu()
             elif picked == 'serve':
-                _run_foreground_serve()
+                _serve_menu()
     except KeyboardInterrupt:
         show_cursor()
         return 130

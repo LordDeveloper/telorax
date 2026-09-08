@@ -31,7 +31,13 @@ def _resolve_docs_dir() -> Path | None:
 
 
 def create_fastapi_app(container: Container) -> FastAPI:
-    app = FastAPI(title='Telorax API', version=__version__)
+    app = FastAPI(
+        title='Telorax API',
+        version=__version__,
+        docs_url=None,
+        redoc_url=None,
+        openapi_url=None,
+    )
     app.state.container = container
     app.include_router(status_router, prefix='/v1', tags=['status'])
     app.include_router(operations_router, prefix='/v1')

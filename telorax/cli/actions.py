@@ -68,7 +68,7 @@ def run_migrations() -> None:
     migrate()
 
 
-def run_serve() -> None:
+def run_serve_foreground() -> None:
     from telorax.bootstrap.application import Application
     from telorax.bootstrap.container import Container
 
@@ -76,6 +76,35 @@ def run_serve() -> None:
     container.wire(modules=['telorax.cli.actions'])
     application = Application(container)
     asyncio.run(application.run_server())
+
+
+def run_serve_daemon(action: str) -> None:
+    systemctl = _systemctl_path()
+    if action == 'status':
+        show_service_status()
+        result = subprocess.run(
+            [systemctl, 'status', SERVICE_UNIT, '--no-pager', '-l'],
+            check=False,
+        )
+        if result.returncode != 0:
+            raise subprocess.CalledProcessError(result.returncode, result.args)
+        return
+
+    if action == 'start':
+        subprocess.run([systemctl, 'enable', '--now', SERVICE_UNIT], check=True)
+    elif action == 'stop':
+        subprocess.run([systemctl, 'disable', '--now', SERVICE_UNIT], check=True)
+    elif action == 'restart':
+        subprocess.run([systemctl, 'restart', SERVICE_UNIT], check=True)
+    else:
+        msg = f'Unknown serve action: {action}'
+        raise RuntimeError(msg)
+
+    show_service_status()
+
+
+def run_service(action: str) -> None:
+    run_serve_daemon(action)
 
 
 def load_settings_summary() -> tuple[Path, Settings | None]:
@@ -142,19 +171,3 @@ def show_service_status() -> None:
             print(f'HTTP /v1/health: port in use but not Telorax ({exc})')
     else:
         print(f'Listen {host}:{port}: closed')
-
-
-def run_service(action: str) -> None:
-    systemctl = _systemctl_path()
-    if action == 'status':
-        show_service_status()
-        result = subprocess.run(
-            [systemctl, 'status', SERVICE_UNIT, '--no-pager', '-l'],
-            check=False,
-        )
-        if result.returncode != 0:
-            raise subprocess.CalledProcessError(result.returncode, result.args)
-        return
-
-    subprocess.run([systemctl, action, SERVICE_UNIT], check=True)
-    show_service_status()
