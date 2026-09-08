@@ -54,7 +54,7 @@ class Settings(BaseSettings):
 
     # Mobile Android agent + WireGuard
     mobile_agent_poll_seconds: int = 15
-    mobile_agent_latest_version: str = '0.2.0'
+    mobile_agent_latest_version: str = '0.2.1'
     mobile_agent_update_url: str = ''
     mobile_agent_update_sha256: str = ''
     mobile_agent_update_mandatory: bool = False
