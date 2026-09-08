@@ -87,10 +87,14 @@ upgrade_run() {
   local latest="${tag#v}" installed
   installed="$(_installed_version)"
 
-  if [[ "${installed}" == "${latest}" ]]; then
+  if [[ "${installed}" == "${latest}" && "${TELORAX_FORCE_REINSTALL:-0}" != 1 ]]; then
     echo "Already on ${latest}."
   else
-    echo "Upgrading Telorax ${installed} -> ${latest} ..."
+    if [[ "${installed}" == "${latest}" ]]; then
+      echo "Reinstalling Telorax ${latest} ..."
+    else
+      echo "Upgrading Telorax ${installed} -> ${latest} ..."
+    fi
     _install_app "${tag}"
   fi
 

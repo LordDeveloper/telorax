@@ -38,6 +38,7 @@ def api_client() -> TestClient:
                 ComponentHealthDTO(name='config', status='ok'),
                 ComponentHealthDTO(name='database', status='ok'),
                 ComponentHealthDTO(name='redis', status='ok'),
+                ComponentHealthDTO(name='api', status='ok'),
             ),
         ),
     )
