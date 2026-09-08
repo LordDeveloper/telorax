@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import sys
 from collections.abc import Iterable
 from dataclasses import dataclass
@@ -39,13 +38,14 @@ class Choice:
 
 
 def enable_ansi() -> None:
-    if hasattr(sys.stdout, 'reconfigure'):
-        try:
-            sys.stdout.reconfigure(encoding='utf-8', errors='replace')
-            sys.stderr.reconfigure(encoding='utf-8', errors='replace')  # type: ignore[union-attr]
-        except Exception:
-            pass
-    if os.name != 'nt':
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, 'reconfigure', None)
+        if reconfigure is not None:
+            try:
+                reconfigure(encoding='utf-8', errors='replace')
+            except Exception:
+                pass
+    if sys.platform != 'win32':
         return
     try:
         import ctypes
@@ -114,7 +114,7 @@ def decode_key(seq: str) -> str:
 
 
 def read_key() -> str:
-    if os.name == 'nt':
+    if sys.platform == 'win32':
         import msvcrt
 
         ch = msvcrt.getwch()
@@ -126,9 +126,9 @@ def read_key() -> str:
     import tty
 
     fd = sys.stdin.fileno()
-    old = termios.tcgetattr(fd)  # type: ignore[attr-defined]
+    old = termios.tcgetattr(fd)
     try:
-        tty.setraw(fd)  # type: ignore[attr-defined]
+        tty.setraw(fd)
         ch = sys.stdin.read(1)
         if ch == '\x1b':
             extra = sys.stdin.read(1)
@@ -137,7 +137,7 @@ def read_key() -> str:
             return decode_key(ch + extra)
         return decode_key(ch)
     finally:
-        termios.tcsetattr(fd, termios.TCSADRAIN, old)  # type: ignore[attr-defined]
+        termios.tcsetattr(fd, termios.TCSADRAIN, old)
 
 
 def pause(message: str = 'Press Enter to continue...') -> None:
