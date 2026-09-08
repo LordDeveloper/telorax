@@ -64,6 +64,7 @@ class MobileAgentService:
         platform: str,
         arch: str,
     ) -> MobileAgentUpdateDTO:
+        _ = platform, arch
         latest = self._settings.mobile_agent_latest_version
         available = latest != current_version and bool(self._settings.mobile_agent_update_url)
         return MobileAgentUpdateDTO(
@@ -78,7 +79,10 @@ class MobileAgentService:
     def _build_wireguard_config(self, client_address: str) -> str:
         if not self._settings.wireguard_enabled:
             return ''
-        private_key = self._settings.wireguard_client_private_key.get_secret_value()
+        client_key = self._settings.wireguard_client_private_key
+        if client_key is None:
+            return ''
+        private_key = client_key.get_secret_value()
         if not private_key or not self._settings.wireguard_server_public_key:
             return ''
         endpoint = self._settings.wireguard_endpoint

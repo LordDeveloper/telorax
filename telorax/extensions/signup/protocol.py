@@ -3,8 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
 
-from telorax.application.dto.provisioning import ProvisioningJobDTO
-
 
 @dataclass(frozen=True, slots=True)
 class SignupContext:

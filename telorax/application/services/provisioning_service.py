@@ -185,6 +185,7 @@ def _to_dto(job: ProvisioningJob) -> ProvisioningJobDTO:
         country_iso=job.country_iso,
         first_name=job.first_name,
         last_name=job.last_name,
+        two_factor_password=job.two_factor_password,
         agent_id=job.agent_id,
         account_id=job.account_id,
         failure_reason=job.failure_reason,

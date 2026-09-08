@@ -87,10 +87,3 @@ class SQLAlchemyUnitOfWork(UnitOfWork):
             msg = 'UnitOfWork not entered: provisioning_jobs'
             raise RuntimeError(msg)
         return self._provisioning_jobs
-
-    @property
-    def provisioning_jobs(self) -> SQLAlchemyProvisioningJobRepository:
-        if self._provisioning_jobs is None:
-            msg = 'UnitOfWork not entered: provisioning_jobs'
-            raise RuntimeError(msg)
-        return self._provisioning_jobs

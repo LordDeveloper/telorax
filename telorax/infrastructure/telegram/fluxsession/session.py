@@ -132,7 +132,7 @@ class SessionManager:
             session_string = session_string[1:]
 
         dc_id, _, port, auth_key = struct.unpack(
-            '>B{}sH256s'.format(4 if len(session_string) == 352 else 16),
+            f'>B{4 if len(session_string) == 352 else 16}sH256s',
             base64.urlsafe_b64decode(session_string + '=' * (-len(session_string) % 4)),
         )
 
@@ -254,7 +254,7 @@ class SessionManager:
     def telethon_string_session(self):
         return '1' + base64.urlsafe_b64encode(
             struct.pack(
-                '>B{}sH256s'.format(len(self.session.server_address.packed)),
+                f'>B{len(self.session.server_address.packed)}sH256s',
                 self.session.dc_id,
                 self.session.server_address.packed,
                 self.session.port,

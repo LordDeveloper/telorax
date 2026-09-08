@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from telorax.extensions.signup.protocol import SignupAutomation, SignupContext
+from telorax.extensions.signup.protocol import SignupContext
 
 
 class UiautomatorSignupAutomation:

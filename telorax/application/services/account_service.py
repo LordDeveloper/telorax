@@ -151,6 +151,7 @@ class AccountService:
                 )
                 saved = await unit_of_work.accounts.create(account)
             else:
+                assert existing is not None
                 account = Account(
                     id=existing.id,
                     msisdn=imported.msisdn,

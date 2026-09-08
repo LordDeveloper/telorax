@@ -78,7 +78,7 @@ async def update_account(
     except OperationValidationError as exc:
         raise HTTPException(status_code=422, detail=exc.message) from exc
     except AccountNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=exc.message) from exc
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
     return account.to_api_dict()
 
 
@@ -90,7 +90,7 @@ async def deactivate_account(
     try:
         account = await account_service.deactivate_account(account_id)
     except AccountNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=exc.message) from exc
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
     return account.to_api_dict()
 
 

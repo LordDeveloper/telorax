@@ -7,7 +7,10 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Respon
 from telorax.api.dependencies import get_provisioning_service
 from telorax.api.middleware.agent_auth import verify_signup_agent
 from telorax.api.middleware.auth import verify_api_credentials
-from telorax.application.dto.provisioning import CompleteProvisioningJobDTO, CreateProvisioningJobDTO
+from telorax.application.dto.provisioning import (
+    CompleteProvisioningJobDTO,
+    CreateProvisioningJobDTO,
+)
 from telorax.application.services.provisioning_service import (
     ProvisioningJobNotFoundError,
     ProvisioningService,

@@ -27,6 +27,7 @@ class ProvisioningJobDTO:
     country_iso: str | None
     first_name: str
     last_name: str
+    two_factor_password: str | None
     agent_id: str | None
     account_id: int | None
     failure_reason: str | None

@@ -52,6 +52,7 @@ class TeloraxSignupAgentClient:
                 country_iso=payload.get('country_iso'),
                 first_name=payload['first_name'],
                 last_name=payload['last_name'],
+                two_factor_password=payload.get('two_factor_password'),
                 agent_id=payload.get('agent_id'),
                 account_id=payload.get('account_id'),
                 failure_reason=payload.get('failure_reason'),

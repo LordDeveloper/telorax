@@ -25,11 +25,12 @@ async def register_mobile_agent(
     agent_id: Annotated[str, Depends(verify_signup_agent)],
     mobile_agent_service: Annotated[MobileAgentService, Depends(get_mobile_agent_service)],
 ) -> dict[str, str]:
+    raw_capabilities = dict(payload.get('capabilities') or {})
     dto = MobileAgentRegisterDTO(
         platform=str(payload.get('platform') or 'android'),
         arch=str(payload.get('arch') or 'arm64'),
         version=str(payload.get('version') or '0.0.0'),
-        capabilities=mobile_agent_service.parse_capabilities(dict(payload.get('capabilities') or {})),
+        capabilities=mobile_agent_service.parse_capabilities(raw_capabilities),
     )
     return mobile_agent_service.register(agent_id, dto)
 
@@ -40,9 +41,10 @@ async def mobile_agent_heartbeat(
     agent_id: Annotated[str, Depends(verify_signup_agent)],
     mobile_agent_service: Annotated[MobileAgentService, Depends(get_mobile_agent_service)],
 ) -> dict[str, str]:
+    raw_capabilities = dict(payload.get('capabilities') or {})
     dto = MobileAgentHeartbeatDTO(
         status=str(payload.get('status') or 'online'),
-        capabilities=mobile_agent_service.parse_capabilities(dict(payload.get('capabilities') or {})),
+        capabilities=mobile_agent_service.parse_capabilities(raw_capabilities),
         tunnel_up=bool(payload.get('tunnel_up')),
     )
     return mobile_agent_service.heartbeat(agent_id, dto)

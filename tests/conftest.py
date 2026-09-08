@@ -14,8 +14,8 @@ from telorax.application.dto.account import (
     ImportSessionResultDTO,
 )
 from telorax.application.dto.health import ComponentHealthDTO, HealthReportDTO
-from telorax.application.dto.operation import OperationSummaryDTO
 from telorax.application.dto.mobile_agent import TelegramCapabilitiesDTO
+from telorax.application.dto.operation import OperationSummaryDTO
 from telorax.application.dto.provisioning import ProvisioningJobDTO
 from telorax.bootstrap.container import Container
 from telorax.core.enums import AccountState, OperationType, ProvisioningState
@@ -116,6 +116,7 @@ def api_client() -> TestClient:
             country_iso='IR',
             first_name='Demo',
             last_name='User',
+            two_factor_password=None,
             agent_id=None,
             account_id=None,
             failure_reason=None,
@@ -132,8 +133,8 @@ def api_client() -> TestClient:
     mobile_agent_service = MagicMock()
     mobile_agent_service.register.return_value = {'device_id': 'android-01', 'status': 'registered'}
     mobile_agent_service.heartbeat.return_value = {'status': 'ok'}
-    mobile_agent_service.get_config.return_value = MagicMock(to_api_dict=lambda: {})
-    mobile_agent_service.check_update.return_value = MagicMock(to_api_dict=lambda: {})
+    mobile_agent_service.get_config.return_value = MagicMock(to_api_dict=dict)
+    mobile_agent_service.check_update.return_value = MagicMock(to_api_dict=dict)
     mobile_agent_service.parse_capabilities.return_value = TelegramCapabilitiesDTO()
     container.operation_service.override(operation_service)
     container.health_service.override(health_service)
