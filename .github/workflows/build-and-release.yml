@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: write
-  actions: write
 
 concurrency:
   group: telorax-build-${{ github.ref }}
@@ -32,6 +31,15 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
+          if [ "${{ github.event_name }}" = "push" ]; then
+            pip install nuitka ordered-set zstandard
+          fi
+
+      - name: Install build tools
+        if: github.event_name == 'push'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends gcc patchelf
 
       - name: Ruff
         run: ruff check telorax tests
@@ -42,8 +50,30 @@ jobs:
       - name: Pytest
         run: pytest --cov=telorax --cov-report=term-missing
 
-  build-binary:
-    name: build-${{ matrix.asset }}
+      - name: Build binary
+        if: github.event_name == 'push'
+        run: |
+          python -m nuitka \
+            --standalone \
+            --onefile \
+            --jobs=$(nproc) \
+            --output-dir=dist \
+            --output-filename=telorax \
+            --include-package=telorax \
+            telorax/cli/app.py
+          chmod +x dist/telorax
+          dist/telorax version
+
+      - name: Upload binary
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: telorax-binary
+          path: dist/telorax
+          retention-days: 1
+
+  releasing:
+    name: Releasing new version
     needs: building
     if: >-
       ${{
@@ -51,68 +81,22 @@ jobs:
         && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
         && !contains(github.event.head_commit.message, '[skip ci]')
       }}
-    runs-on: ${{ matrix.runs-on }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: linux/amd64
-            asset: telorax-linux-amd64
-            runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build ${{ matrix.asset }}
-        uses: docker/build-push-action@v6
-        env:
-          DOCKER_BUILD_RECORD_UPLOAD: false
-        with:
-          context: .
-          file: packaging/Dockerfile
-          platforms: ${{ matrix.platform }}
-          target: export
-          provenance: false
-          sbom: false
-          build-args: |
-            NUITKA_JOBS=4
-          outputs: type=local,dest=dist/export
-          cache-from: type=gha,scope=${{ matrix.asset }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.asset }}
-
-      - name: Package binary
-        run: |
-          mkdir -p dist
-          cp -f dist/export/telorax "dist/${{ matrix.asset }}"
-          chmod +x "dist/${{ matrix.asset }}"
-          ln -sf "${{ matrix.asset }}" dist/telorax
-          file "dist/${{ matrix.asset }}" || true
-          ls -lh dist/
-
-      - name: Upload binary artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.asset }}
-          path: dist/${{ matrix.asset }}
-          if-no-files-found: error
-
-  package-release:
-    name: package-release
-    needs: build-binary
-    if: >-
-      ${{
-        github.event_name == 'push'
-        && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-        && !contains(github.event.head_commit.message, '[skip ci]')
-      }}
     runs-on: ubuntu-latest
+    concurrency:
+      group: telorax-release
+      cancel-in-progress: false
 
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download binary
+        uses: actions/download-artifact@v4
+        with:
+          name: telorax-binary
+          path: dist
 
       - name: Determine next version
         id: version
@@ -133,20 +117,19 @@ jobs:
           echo "tag=${NEXT_TAG}" >> "${GITHUB_OUTPUT}"
           echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
 
-      - name: Download binary
-        uses: actions/download-artifact@v4
-        with:
-          name: telorax-linux-amd64
-          path: dist
-
-      - name: Assemble release bundle
+      - name: Sync project version
         run: |
           VERSION='${{ steps.version.outputs.version }}'
-          TAG='${{ steps.version.outputs.tag }}'
+          sed -i "s/^version = .*/version = '${VERSION}'/" pyproject.toml
+          sed -i "s/^__version__ = .*/__version__ = '${VERSION}'/" telorax/__init__.py
+
+      - name: Build release assets
+        run: |
+          VERSION='${{ steps.version.outputs.version }}'
           chmod +x scripts/package-deb.sh
-          scripts/package-deb.sh "${VERSION}" amd64 dist/telorax-linux-amd64
+          scripts/package-deb.sh "${VERSION}" amd64 dist/telorax
           mkdir -p release-assets
-          cp dist/telorax-linux-amd64 release-assets/telorax
+          cp dist/telorax release-assets/telorax
           cp "telorax_${VERSION}_linux_amd64.deb" release-assets/
           cp scripts/install.sh release-assets/
           cp scripts/deps.sh release-assets/
@@ -154,55 +137,7 @@ jobs:
             cd release-assets
             sha256sum telorax telorax_*.deb > SHA256SUMS
           )
-          echo "${TAG}" > release-assets/RELEASE_TAG.txt
           ls -lh release-assets/
-
-      - name: Upload release bundle
-        uses: actions/upload-artifact@v4
-        with:
-          name: telorax-release-bundle
-          path: release-assets/
-          retention-days: 1
-
-  releasing:
-    name: Releasing new version
-    needs: package-release
-    if: >-
-      ${{
-        github.event_name == 'push'
-        && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-        && !contains(github.event.head_commit.message, '[skip ci]')
-      }}
-    runs-on: ubuntu-latest
-    concurrency:
-      group: telorax-release
-      cancel-in-progress: false
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Download release bundle
-        uses: actions/download-artifact@v4
-        with:
-          name: telorax-release-bundle
-          path: release-assets
-
-      - name: Read release tag
-        id: version
-        run: |
-          TAG=$(tr -d '\r\n' < release-assets/RELEASE_TAG.txt)
-          VERSION="${TAG#v}"
-          echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"
-          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
-
-      - name: Sync project version
-        run: |
-          VERSION='${{ steps.version.outputs.version }}'
-          sed -i "s/^version = .*/version = '${VERSION}'/" pyproject.toml
-          sed -i "s/^__version__ = .*/__version__ = '${VERSION}'/" telorax/__init__.py
 
       - name: Commit version bump and tag
         run: |
