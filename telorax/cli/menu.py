@@ -3,7 +3,7 @@ from __future__ import annotations
 import shutil
 import subprocess
 import sys
-from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 from telorax import __version__
 from telorax.cli import actions
@@ -30,6 +30,9 @@ from telorax.cli.console import (
     show_cursor,
 )
 from telorax.core.config.settings import default_env_path
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 def _print(text: str = '') -> None:
