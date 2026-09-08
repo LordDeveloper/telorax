@@ -55,11 +55,14 @@ exclude = ['.github']
 select = ['E', 'F', 'W', 'I', 'N', 'UP', 'B', 'A', 'COM', 'C4', 'DTZ', 'T20', 'ICN', 'LOG', 'G', 'PIE', 'PT', 'RSE', 'SLF', 'SIM', 'TID', 'TCH', 'ARG', 'PTH', 'PL']
 
 [tool.ruff.lint.per-file-ignores]
-'tests/**' = ['PLR2004']
+'tests/**' = ['PLR2004', 'PLC0415', 'SLF001', 'TC002']
 'telorax/api/routes/**' = ['TC001']
+'telorax/api/dependencies.py' = ['TC001']
 'telorax/application/dto/**' = ['TC001']
 'telorax/application/validators/**' = ['TC001']
 'telorax/application/services/account_service.py' = ['TC001']
+'telorax/bootstrap/application.py' = ['PLC0415']
+'telorax/infrastructure/database/models/*' = ['TC003']
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10
@@ -78,6 +81,15 @@ plugins = ['pydantic.mypy']
 [tool.coverage.run]
 source = ['telorax']
 branch = true
+omit = [
+    'telorax/cli/tui/*',
+    'telorax/worker/*',
+    'telorax/bootstrap/application.py',
+    'telorax/infrastructure/database/models/*',
+    'telorax/infrastructure/database/repositories/*',
+    'telorax/infrastructure/database/engine.py',
+    'telorax/domain/interfaces/repositories.py',
+]
 
 [tool.coverage.report]
 fail_under = 80

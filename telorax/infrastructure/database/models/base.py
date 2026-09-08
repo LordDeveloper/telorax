@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from datetime import datetime
+from typing import Any
 
 from sqlalchemy import BigInteger, Boolean, DateTime, Index, Integer, String, Text, func
 from sqlalchemy.dialects.mysql import JSON
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-
-if TYPE_CHECKING:
-    from datetime import datetime
 
 
 class Base(DeclarativeBase):

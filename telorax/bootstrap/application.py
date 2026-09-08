@@ -9,7 +9,6 @@ import structlog
 import uvicorn
 
 from telorax import __version__
-from telorax.api.app import create_fastapi_app
 from telorax.core.logging import configure_logging
 
 if TYPE_CHECKING:
@@ -37,6 +36,8 @@ class Application:
         log.info('application.stopped')
 
     async def run_server(self) -> None:
+        from telorax.api.app import create_fastapi_app
+
         await self.start()
         settings = self._container.config()
         app = create_fastapi_app(self._container)

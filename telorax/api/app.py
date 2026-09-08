@@ -13,7 +13,6 @@ if TYPE_CHECKING:
 
 
 def create_fastapi_app(container: Container) -> FastAPI:
-    container.wire(modules=['telorax.api.routes.v1.status', 'telorax.api.routes.v1.campaigns'])
     app = FastAPI(title='Telorax API', version=__version__)
     app.state.container = container
     app.include_router(status_router, prefix='/v1', tags=['status'])
