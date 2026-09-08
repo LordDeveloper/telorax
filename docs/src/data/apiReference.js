@@ -1,3 +1,46 @@
+export const HTTP_STATUS_CODES = [
+  { code: 200, label: 'OK', description: 'Request succeeded.' },
+  { code: 201, label: 'Created', description: 'Operation queued successfully.' },
+  { code: 404, label: 'Not Found', description: 'Operation ID does not exist.' },
+  { code: 422, label: 'Unprocessable', description: 'Validation failed — check type, extra, or quantity.' },
+  { code: 500, label: 'Server Error', description: 'Unexpected failure — check Telorax logs.' },
+]
+
+export const OPERATION_RESPONSE_FIELDS = [
+  { name: 'id', type: 'integer', description: 'Unique operation identifier.' },
+  { name: 'type', type: 'string', description: 'OperationType name, e.g. VIEW.' },
+  { name: 'quantity', type: 'integer', description: 'Total units requested.' },
+  { name: 'completed', type: 'integer', description: 'Units fulfilled so far.' },
+  { name: 'remaining', type: 'integer', description: 'Units still pending.' },
+  { name: 'state', type: 'string', description: 'Lifecycle state — QUEUED, RUNNING, COMPLETED, …' },
+  { name: 'progress_ratio', type: 'float', description: 'completed / quantity (0.0 – 1.0).' },
+  { name: 'target', type: 'string', description: 'Channel, group, or bot reference.' },
+]
+
+export const OPERATION_SUMMARY_EXAMPLE = {
+  id: 42,
+  type: 'VIEW',
+  quantity: 500,
+  completed: 120,
+  remaining: 380,
+  state: 'RUNNING',
+  progress_ratio: 0.24,
+  target: '@yourchannel',
+}
+
+export const HEALTH_RESPONSE = { status: 'ok' }
+
+export const STATUS_RESPONSE = {
+  version: '0.1.13',
+  status: 'healthy',
+  components: [
+    { name: 'config', status: 'ok', detail: '/etc/telorax/.env' },
+    { name: 'database', status: 'ok', detail: null },
+    { name: 'redis', status: 'ok', detail: null },
+    { name: 'api', status: 'ok', detail: '127.0.0.1:2082' },
+  ],
+}
+
 export const OPERATION_TYPES = [
   {
     code: 1,
@@ -114,36 +157,44 @@ export const ENDPOINTS = [
     method: 'GET',
     path: '/v1/health',
     title: 'Health check',
-    description: 'Lightweight liveness probe returning {"status": "ok"}.',
+    description: 'Lightweight liveness probe. Returns immediately — safe for load balancers and uptime monitors.',
+    responseExample: HEALTH_RESPONSE,
+    statusCodes: [200],
   },
   {
     id: 'status',
     method: 'GET',
     path: '/v1/status',
     title: 'System status',
-    description: 'Detailed health report with component breakdown.',
+    description: 'Full diagnostics report with per-component health (config, database, redis, api).',
+    responseExample: STATUS_RESPONSE,
+    statusCodes: [200],
   },
   {
     id: 'operations-queued',
     method: 'GET',
     path: '/v1/operations/queued',
     title: 'List queued operations',
-    description: 'Returns operations in QUEUED state, newest first.',
+    description: 'Returns operations in QUEUED state, newest first. Useful for monitoring backlog.',
     queryParams: [{ name: 'limit', type: 'integer', default: '50', description: 'Max results (1–500).' }],
+    responseExample: [OPERATION_SUMMARY_EXAMPLE],
+    statusCodes: [200],
   },
   {
     id: 'operations-get',
     method: 'GET',
     path: '/v1/operations/{id}',
     title: 'Get operation',
-    description: 'Fetch a single operation by ID.',
+    description: 'Fetch a single operation by numeric ID. Returns 404 if not found.',
+    responseExample: OPERATION_SUMMARY_EXAMPLE,
+    statusCodes: [200, 404],
   },
   {
     id: 'operations-create',
     method: 'POST',
     path: '/v1/operations',
     title: 'Create operation',
-    description: 'Queue a new batch operation against a Telegram target.',
+    description: 'Queue a new batch operation. Validates type-specific extra fields before enqueueing.',
     bodyExample: {
       type: 1,
       quantity: 500,
@@ -151,6 +202,8 @@ export const ENDPOINTS = [
       extra: { message_ids: [42] },
       country: 'IR',
     },
+    responseExample: { ...OPERATION_SUMMARY_EXAMPLE, completed: 0, remaining: 500, state: 'QUEUED', progress_ratio: 0 },
+    statusCodes: [201, 422],
   },
 ]
 

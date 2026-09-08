@@ -10,6 +10,8 @@ import {
   GridResponsive,
   MutedText,
   PageWrap,
+  SectionBlock,
+  SectionDivider,
   SectionHeading,
   Stack,
   UpperLabel,
@@ -23,9 +25,10 @@ const TypeHeader = styled.div`
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
-  padding: 20px 24px;
+  gap: 14px;
+  padding: 22px 26px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  background: linear-gradient(180deg, ${({ theme }) => theme.colors.surfaceOverlay}, transparent);
 `
 
 const TypeCodeBadge = styled.span`
@@ -50,8 +53,10 @@ const TypeTitleRow = styled.div`
 
 const TypeTitle = styled.h2`
   margin: 0;
+  font-family: ${({ theme }) => theme.fonts.display};
   font-size: 20px;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   color: ${({ theme }) => theme.colors.white};
 `
 
@@ -92,8 +97,8 @@ const TypesStack = styled.div`
   gap: 20px;
 `
 
-const StatesSection = styled.div`
-  margin-top: 48px;
+const StatesSection = styled(SectionBlock)`
+  margin-top: 56px;
 `
 
 export function TypesPage() {
@@ -162,9 +167,11 @@ export function TypesPage() {
       </TypesStack>
 
       <StatesSection>
+        <SectionDivider />
         <SectionHeading
+          eyebrow="Lifecycle"
           title="Operation states"
-          description="Lifecycle values returned as state name strings in summaries."
+          description="State is returned as an uppercase string in operation summaries. Workers transition operations through these values."
         />
         <GridResponsive>
           {OPERATION_STATES.map((state) => (

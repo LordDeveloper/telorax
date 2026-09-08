@@ -26,6 +26,7 @@ import {
   ResponseHeader,
   Select,
   SpinIcon,
+  SectionDivider,
   Stack,
   SubHeading,
   TextArea,
@@ -210,6 +211,8 @@ export function ApiPlayground({ initialEndpointId = 'operations-create' }) {
               </div>
             </>
           ) : null}
+
+          <SectionDivider />
 
           <InfoPanel>
             <PanelLabel>Resolved path</PanelLabel>

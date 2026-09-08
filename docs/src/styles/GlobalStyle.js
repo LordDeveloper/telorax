@@ -17,19 +17,29 @@ export const GlobalStyle = createGlobalStyle`
     margin: 0;
     min-width: 320px;
     font-family: ${({ theme }) => theme.fonts.sans};
+    font-size: 15px;
+    line-height: 1.65;
+    letter-spacing: 0.01em;
     background: ${({ theme }) => theme.colors.surface};
-    color: ${({ theme }) => theme.colors.white};
+    color: ${({ theme }) => theme.colors.text};
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: ${({ theme }) => theme.fonts.display};
+    letter-spacing: -0.02em;
   }
 
   code, pre {
     font-family: ${({ theme }) => theme.fonts.mono};
+    font-feature-settings: 'liga' 0;
   }
 
   ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
   }
 
   ::-webkit-scrollbar-track {
@@ -37,8 +47,9 @@ export const GlobalStyle = createGlobalStyle`
   }
 
   ::-webkit-scrollbar-thumb {
-    background: ${({ theme }) => theme.colors.border};
+    background: ${({ theme }) => theme.colors.borderStrong};
     border-radius: 999px;
+    border: 2px solid ${({ theme }) => theme.colors.surface};
   }
 
   ::-webkit-scrollbar-thumb:hover {
@@ -50,7 +61,8 @@ export const GlobalStyle = createGlobalStyle`
   }
 
   ::selection {
-    background: rgba(42, 171, 238, 0.35);
+    background: rgba(42, 171, 238, 0.28);
+    color: ${({ theme }) => theme.colors.white};
   }
 
   @keyframes fadeIn {
@@ -59,12 +71,17 @@ export const GlobalStyle = createGlobalStyle`
   }
 
   @keyframes slideUp {
-    from { opacity: 0; transform: translateY(12px); }
+    from { opacity: 0; transform: translateY(16px); }
     to { opacity: 1; transform: translateY(0); }
   }
 
   @keyframes spin {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
+  }
+
+  @keyframes linePulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
   }
 `
