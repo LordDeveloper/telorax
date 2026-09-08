@@ -114,7 +114,7 @@ export const ENDPOINTS = [
     method: 'GET',
     path: '/v1/health',
     title: 'Health check',
-    description: 'Lightweight liveness probe returning overall status.',
+    description: 'Lightweight liveness probe returning {"status": "ok"}.',
   },
   {
     id: 'status',

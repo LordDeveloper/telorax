@@ -24,8 +24,5 @@ async def get_status(
 
 
 @router.get('/health')
-async def health_check(
-    health_service: Annotated[HealthService, Depends(get_health_service)],
-) -> dict[str, str]:
-    report = await health_service.get_health_report()
-    return {'status': report.status}
+async def health_check() -> dict[str, str]:
+    return {'status': 'ok'}
