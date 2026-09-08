@@ -69,6 +69,33 @@ _mysql_client() {
   echo mysql
 }
 
+_mysql_root_cmd() {
+  local -n _cmd_ref=$1
+  local mysql_bin
+  mysql_bin="$(_mysql_client)"
+  if [[ "${DEPS_MODE}" == local ]]; then
+    _cmd_ref=("${mysql_bin}" --protocol=socket --socket="${TELORAX_ROOT}/run/mysqld.sock" -uroot)
+  else
+    _cmd_ref=("${mysql_bin}" --protocol=socket -uroot)
+  fi
+}
+
+_wait_for_mysql() {
+  local mysql_cmd=()
+  local attempt
+
+  for attempt in $(seq 1 30); do
+    _mysql_root_cmd mysql_cmd
+    if "${mysql_cmd[@]}" -e 'SELECT 1' >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 1
+  done
+
+  echo 'MariaDB did not become ready in time.' >&2
+  return 1
+}
+
 _system_service_name() {
   local base="$1"
   case "${base}" in
@@ -289,18 +316,21 @@ _provision_database() {
   fi
 
   if [[ "${DEPS_MODE}" == local ]]; then
-    mysql_cmd=(--protocol=socket --socket="${TELORAX_ROOT}/run/mysqld.sock" -uroot)
-  else
-    mysql_cmd=(--protocol=socket -uroot)
+    _wait_for_mysql
   fi
+
+  _mysql_root_cmd mysql_cmd
 
   "${mysql_cmd[@]}" <<SQL
 CREATE DATABASE IF NOT EXISTS \`${db_name}\`
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
 CREATE USER IF NOT EXISTS '${db_user}'@'localhost' IDENTIFIED BY '${db_password}';
+CREATE USER IF NOT EXISTS '${db_user}'@'127.0.0.1' IDENTIFIED BY '${db_password}';
 ALTER USER '${db_user}'@'localhost' IDENTIFIED BY '${db_password}';
+ALTER USER '${db_user}'@'127.0.0.1' IDENTIFIED BY '${db_password}';
 GRANT ALL PRIVILEGES ON \`${db_name}\`.* TO '${db_user}'@'localhost';
+GRANT ALL PRIVILEGES ON \`${db_name}\`.* TO '${db_user}'@'127.0.0.1';
 FLUSH PRIVILEGES;
 SQL
 
@@ -336,17 +366,13 @@ deps_status() {
     local db_name db_user mysql_cmd=()
     db_name="$(_load_env_value DB_NAME telorax)"
     db_user="$(_load_env_value DB_USER telorax)"
-    if [[ "${DEPS_MODE}" == local ]]; then
-      mysql_cmd=(--protocol=socket --socket="${TELORAX_ROOT}/run/mysqld.sock" -uroot)
-    else
-      mysql_cmd=(--protocol=socket -uroot)
-    fi
+    _mysql_root_cmd mysql_cmd
     if "${mysql_cmd[@]}" -e "USE \`${db_name}\`;" >/dev/null 2>&1; then
       echo "Database '${db_name}': OK"
     else
       echo "Database '${db_name}': missing"
     fi
-    if "${mysql_cmd[@]}" -Nse "SELECT 1 FROM mysql.user WHERE User='${db_user}' AND Host='localhost';" | grep -q 1; then
+    if "${mysql_cmd[@]}" -Nse "SELECT 1 FROM mysql.user WHERE User='${db_user}' AND Host IN ('localhost', '127.0.0.1');" | grep -q 1; then
       echo "Database user '${db_user}': OK"
     else
       echo "Database user '${db_user}': missing"

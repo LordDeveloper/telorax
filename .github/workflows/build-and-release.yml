@@ -142,11 +142,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download wheel
-        uses: actions/download-artifact@v4
+      - uses: actions/setup-python@v5
         with:
-          name: telorax-wheel
-          path: dist
+          python-version: '3.12'
+
+      - name: Sync release version and rebuild wheel
+        env:
+          VERSION: ${{ needs.prepare-release.outputs.version }}
+        run: |
+          sed -i "s/^version = .*/version = '${VERSION}'/" pyproject.toml
+          sed -i "s/^__version__ = .*/__version__ = '${VERSION}'/" telorax/__init__.py
+          python -m pip install --upgrade pip build
+          python -m build --wheel --outdir dist
+          ls -lh dist/
 
       - name: Download docs
         uses: actions/download-artifact@v4
@@ -207,11 +215,9 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Download wheel
-        uses: actions/download-artifact@v4
+      - uses: actions/setup-python@v5
         with:
-          name: telorax-wheel
-          path: release-assets
+          python-version: '3.12'
 
       - name: Download packages
         uses: actions/download-artifact@v4
@@ -226,14 +232,20 @@ jobs:
           sed -i "s/^version = .*/version = '${VERSION}'/" pyproject.toml
           sed -i "s/^__version__ = .*/__version__ = '${VERSION}'/" telorax/__init__.py
 
+      - name: Build release wheel
+        env:
+          VERSION: ${{ needs.prepare-release.outputs.version }}
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build --wheel --outdir release-assets
+          WHEEL_SRC="$(ls -1 release-assets/telorax-*.whl | head -n 1)"
+          mv "${WHEEL_SRC}" "release-assets/${RELEASE_REPO_NAME}.${VERSION}-any.whl"
+
       - name: Assemble release bundle
         env:
           VERSION: ${{ needs.prepare-release.outputs.version }}
         run: |
           chmod +x scripts/release-name.sh
-          WHEEL_SRC="$(ls -1 release-assets/*.whl | head -n 1)"
-          WHEEL_OUT="${RELEASE_REPO_NAME}.${VERSION}-any.whl"
-          mv "${WHEEL_SRC}" "release-assets/${WHEEL_OUT}"
           cp scripts/install.sh release-assets/
           cp scripts/deps.sh release-assets/
           cp scripts/release-name.sh release-assets/
