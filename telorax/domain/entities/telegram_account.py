@@ -8,7 +8,7 @@ from telorax.core.enums import AccountState
 
 @dataclass(slots=True)
 class TelegramAccount:
-    """یک user account واقعی Telegram که session دارد."""
+    """A real Telegram user account backed by a session."""
 
     id: int
     msisdn: int

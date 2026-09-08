@@ -25,7 +25,7 @@ def build_campaign_fingerprint(
     engagement_kind: EngagementKind,
     target_spec: dict[str, Any],
 ) -> str:
-    """Hash پایدار برای dedup — فقط فیلدهای structurally relevant."""
+    """Stable hash for dedup using only structurally relevant fields."""
     normalized = {
         key: value
         for key, value in target_spec.items()

@@ -34,7 +34,7 @@ curl -fsSL https://github.com/LordDeveloper/telorax/releases/latest/download/ins
 sudo telorax deps install
 sudo telorax deps status
 sudo telorax deps restart
-sudo telorax deps provision   # ساخت/به‌روزرسانی DB و user از روی .env
+sudo telorax deps provision   # create/update DB and user from .env
 ```
 
 ### روش ۲ — نصب دستی با `.deb`

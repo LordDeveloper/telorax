@@ -2,7 +2,7 @@ from enum import IntEnum
 
 
 class CampaignState(IntEnum):
-    """وضعیت lifecycle یک campaign."""
+    """Lifecycle state of a campaign."""
 
     FAILED = -1
     CANCELLED = 0

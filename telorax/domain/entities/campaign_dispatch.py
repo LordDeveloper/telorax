@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 @dataclass(slots=True)
 class CampaignDispatch:
-    """ثبت اینکه یک account برای یک campaign اجرا شده (dedup + audit)."""
+    """Record that an account executed a campaign (dedup + audit)."""
 
     campaign_id: int
     account_id: int

@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 @dataclass(slots=True)
 class ChannelMembership:
-    """عضویت یک account در channel/group + زمان‌بندی خروج."""
+    """Account membership in a channel/group, including scheduled leave time."""
 
     id: int
     account_id: int

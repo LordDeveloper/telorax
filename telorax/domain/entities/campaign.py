@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 @dataclass(slots=True)
 class Campaign:
-    """درخواست batch برای انجام یک نوع engagement روی Telegram."""
+    """Batch request to perform one engagement kind on Telegram."""
 
     id: int
     engagement_kind: EngagementKind

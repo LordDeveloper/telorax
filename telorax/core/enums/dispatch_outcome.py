@@ -2,7 +2,7 @@ from enum import IntEnum
 
 
 class DispatchOutcome(IntEnum):
-    """نتیجه اجرای campaign روی یک account."""
+    """Outcome of running a campaign against a single account."""
 
     SUCCESS = 1
     SKIPPED = 2

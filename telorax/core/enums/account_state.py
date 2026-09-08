@@ -2,7 +2,7 @@ from enum import IntEnum
 
 
 class AccountState(IntEnum):
-    """وضعیت عملیاتی یک Telegram account."""
+    """Operational state of a Telegram account."""
 
     DEACTIVATED = 0
     ACTIVE = 1

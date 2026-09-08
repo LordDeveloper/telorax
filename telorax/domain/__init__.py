@@ -1,10 +1,10 @@
 """
 Telorax Domain Glossary
 -----------------------
-TelegramAccount  : یک user account واقعی Telegram با session
-Campaign         : درخواست batch engagement (مثلاً 500 view)
-EngagementKind   : نوع تعامل (VIEW, SUBSCRIBE, REACTION, ...)
-CampaignDispatch : ثبت اجرای campaign روی یک account (dedup)
-ChannelMembership: عضویت account در channel/group
-PeerSnapshot     : cache اطلاعات peer برای کاهش API call
+TelegramAccount  : real Telegram user account with a session
+Campaign         : batch engagement request (e.g. 500 views)
+EngagementKind   : engagement type (VIEW, SUBSCRIBE, REACTION, ...)
+CampaignDispatch : record of a campaign run on one account (dedup)
+ChannelMembership: account membership in a channel/group
+PeerSnapshot     : cached peer metadata to reduce API calls
 """
