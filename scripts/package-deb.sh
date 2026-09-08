@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=release-name.sh
+source "${SCRIPT_DIR}/release-name.sh"
+
 VERSION="${1:?usage: package-deb.sh VERSION ARCH WHEEL_PATH}"
 ARCH="${2:-amd64}"
 WHEEL_PATH="${3:?usage: package-deb.sh VERSION ARCH WHEEL_PATH}"
-PKG_ROOT="telorax_${VERSION}_linux_${ARCH}"
-DEB_FILE="telorax_${VERSION}_linux_${ARCH}.deb"
+PKG_ROOT="$(mktemp -d "/tmp/telorax.${VERSION}-${ARCH}.XXXXXX")"
+DEB_FILE="$(release_artifact_name "${VERSION}" "${ARCH}" deb)"
 WHEEL_NAME="$(basename "${WHEEL_PATH}")"
+
+trap 'rm -rf "${PKG_ROOT}"' EXIT
 
 mkdir -p "${PKG_ROOT}/DEBIAN" \
   "${PKG_ROOT}/usr/local/bin" \
@@ -54,5 +60,4 @@ EOF
 chmod 755 "${PKG_ROOT}/DEBIAN/postinst"
 
 dpkg-deb --build "${PKG_ROOT}" "${DEB_FILE}"
-rm -rf "${PKG_ROOT}"
 echo "Built ${DEB_FILE}"

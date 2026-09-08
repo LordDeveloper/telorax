@@ -42,7 +42,7 @@ sudo telorax deps provision   # create/update DB and user from .env
 ```bash
 TAG=$(curl -fsSL https://api.github.com/repos/LordDeveloper/telorax/releases/latest | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)
 VERSION="${TAG#v}"
-curl -fsSL -o /tmp/telorax.deb "https://github.com/LordDeveloper/telorax/releases/download/${TAG}/telorax_${VERSION}_linux_amd64.deb"
+curl -fsSL -o /tmp/telorax.deb "https://github.com/LordDeveloper/telorax/releases/download/${TAG}/telorax.${VERSION}-amd64.deb"
 sudo dpkg -i /tmp/telorax.deb
 sudo apt-get install -f -y
 sudo systemctl enable --now telorax
@@ -55,7 +55,7 @@ telorax doctor
 TAG=$(curl -fsSL https://api.github.com/repos/LordDeveloper/telorax/releases/latest | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)
 VERSION="${TAG#v}"
 python3 -m venv /opt/telorax/venv
-/opt/telorax/venv/bin/pip install "https://github.com/LordDeveloper/telorax/releases/download/${TAG}/telorax-${VERSION}-py3-none-any.whl"
+/opt/telorax/venv/bin/pip install "https://github.com/LordDeveloper/telorax/releases/download/${TAG}/telorax.${VERSION}-any.whl"
 sudo ln -sf /opt/telorax/venv/bin/telorax /usr/local/bin/telorax
 telorax version
 ```

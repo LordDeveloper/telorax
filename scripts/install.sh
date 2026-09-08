@@ -2,7 +2,8 @@
 set -euo pipefail
 
 REPO="${INSTALL_REPO:-LordDeveloper/telorax}"
-ARCH="${INSTALL_ARCH:-amd64}"
+RELEASE_REPO_NAME="${RELEASE_REPO_NAME:-telorax}"
+ARCH="${INSTALL_ARCH:-}"
 CONFIG_DIR="${CONFIG_DIR:-/etc/telorax}"
 ENV_FILE="${CONFIG_DIR}/.env"
 SKIP_DEPS="${INSTALL_SKIP_DEPS:-0}"
@@ -73,6 +74,29 @@ _require_root() {
   fi
 }
 
+_source_release_name() {
+  if [[ -n "${SCRIPT_DIR}" && -f "${SCRIPT_DIR}/release-name.sh" ]]; then
+    # shellcheck source=release-name.sh
+    source "${SCRIPT_DIR}/release-name.sh"
+    return
+  fi
+  if [[ -f /usr/share/telorax/release-name.sh ]]; then
+    # shellcheck source=/usr/share/telorax/release-name.sh
+    source /usr/share/telorax/release-name.sh
+    return
+  fi
+  release_artifact_name() {
+    local version="$1"
+    local arch="$2"
+    local ext="${3:-}"
+    if [[ -n "${ext}" ]]; then
+      printf '%s.%s-%s.%s\n' "${RELEASE_REPO_NAME}" "${version}" "${arch}" "${ext}"
+    else
+      printf '%s.%s-%s\n' "${RELEASE_REPO_NAME}" "${version}" "${arch}"
+    fi
+  }
+}
+
 _detect_arch() {
   case "$(uname -m)" in
     x86_64) ARCH=amd64 ;;
@@ -103,9 +127,10 @@ _install_app() {
   local tag="$1"
   local version pkg_name pkg_url tmp_pkg
   version="${tag#v}"
+  _source_release_name
 
   if command -v dpkg >/dev/null 2>&1; then
-    pkg_name="telorax_${version}_linux_${ARCH}.deb"
+    pkg_name="$(release_artifact_name "${version}" "${ARCH}" deb)"
     pkg_url="https://github.com/${REPO}/releases/download/${tag}/${pkg_name}"
     tmp_pkg="$(mktemp /tmp/telorax.XXXXXX.deb)"
     echo "Downloading ${pkg_url} ..."
@@ -117,7 +142,7 @@ _install_app() {
   fi
 
   if command -v rpm >/dev/null 2>&1; then
-    pkg_name="telorax_${version}_linux_${ARCH}.rpm"
+    pkg_name="$(release_artifact_name "${version}" "${ARCH}" rpm)"
     pkg_url="https://github.com/${REPO}/releases/download/${tag}/${pkg_name}"
     tmp_pkg="$(mktemp /tmp/telorax.XXXXXX.rpm)"
     echo "Downloading ${pkg_url} ..."

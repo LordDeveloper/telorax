@@ -12,6 +12,9 @@ concurrency:
   group: telorax-build-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  RELEASE_REPO_NAME: telorax
+
 jobs:
   building:
     name: Building
@@ -131,21 +134,30 @@ jobs:
           sudo apt-get install -y --no-install-recommends dpkg-dev rpm
 
       - name: Build packages
+        env:
+          VERSION: ${{ needs.prepare-release.outputs.version }}
+          ARCH: ${{ matrix.arch }}
         run: |
-          VERSION='${{ needs.prepare-release.outputs.version }}'
           WHEEL="$(ls -1 dist/*.whl | head -n 1)"
-          chmod +x scripts/package-deb.sh scripts/package-rpm.sh
-          scripts/package-deb.sh "${VERSION}" "${{ matrix.arch }}" "${WHEEL}"
-          scripts/package-rpm.sh "${VERSION}" "${{ matrix.arch }}" "${WHEEL}"
-          ls -lh telorax_${VERSION}_linux_${{ matrix.arch }}.*
+          chmod +x scripts/package-deb.sh scripts/package-rpm.sh scripts/release-name.sh
+          scripts/package-deb.sh "${VERSION}" "${ARCH}" "${WHEEL}"
+          scripts/package-rpm.sh "${VERSION}" "${ARCH}" "${WHEEL}"
+          ls -lh "${RELEASE_REPO_NAME}.${VERSION}-${ARCH}".*
 
       - name: Upload packages
+        env:
+          VERSION: ${{ needs.prepare-release.outputs.version }}
+          ARCH: ${{ matrix.arch }}
+        run: |
+          mkdir -p upload
+          cp "${RELEASE_REPO_NAME}.${VERSION}-${ARCH}.deb" upload/
+          cp "${RELEASE_REPO_NAME}.${VERSION}-${ARCH}.rpm" upload/
+
+      - name: Upload package artifacts
         uses: actions/upload-artifact@v4
         with:
           name: telorax-packages-${{ matrix.arch }}
-          path: |
-            telorax_${{ needs.prepare-release.outputs.version }}_linux_${{ matrix.arch }}.deb
-            telorax_${{ needs.prepare-release.outputs.version }}_linux_${{ matrix.arch }}.rpm
+          path: upload/
           if-no-files-found: error
           retention-days: 1
 
@@ -189,12 +201,19 @@ jobs:
           sed -i "s/^__version__ = .*/__version__ = '${VERSION}'/" telorax/__init__.py
 
       - name: Assemble release bundle
+        env:
+          VERSION: ${{ needs.prepare-release.outputs.version }}
         run: |
+          chmod +x scripts/release-name.sh
+          WHEEL_SRC="$(ls -1 release-assets/*.whl | head -n 1)"
+          WHEEL_OUT="${RELEASE_REPO_NAME}.${VERSION}-any.whl"
+          mv "${WHEEL_SRC}" "release-assets/${WHEEL_OUT}"
           cp scripts/install.sh release-assets/
           cp scripts/deps.sh release-assets/
+          cp scripts/release-name.sh release-assets/
           (
             cd release-assets
-            sha256sum ./*.whl telorax_*_linux_*.* > SHA256SUMS
+            sha256sum "${RELEASE_REPO_NAME}.${VERSION}-"* > SHA256SUMS
           )
           ls -lh release-assets/
 
@@ -221,17 +240,22 @@ jobs:
           body: |
             ## Packages
 
+            Naming: `${{ env.RELEASE_REPO_NAME }}.<version>-<architecture>.<ext>`
+
             | Distro family | Arch | Asset |
             |---------------|------|-------|
-            | Debian / Ubuntu | amd64 | `telorax_*_linux_amd64.deb` |
-            | Debian / Ubuntu | arm64 | `telorax_*_linux_arm64.deb` |
-            | RHEL / Fedora / Amazon Linux | amd64 | `telorax_*_linux_amd64.rpm` |
-            | RHEL / Fedora / Amazon Linux | arm64 | `telorax_*_linux_arm64.rpm` |
-            | Any Linux (Python 3.11+) | all | `telorax-*-py3-none-any.whl` |
+            | Debian / Ubuntu | amd64 | `telorax.*-amd64.deb` |
+            | Debian / Ubuntu | arm64 | `telorax.*-arm64.deb` |
+            | RHEL / Fedora / Amazon Linux | amd64 | `telorax.*-amd64.rpm` |
+            | RHEL / Fedora / Amazon Linux | arm64 | `telorax.*-arm64.rpm` |
+            | Any Linux (Python 3.11+) | any | `telorax.*-any.whl` |
           files: |
-            release-assets/*.whl
-            release-assets/telorax_*_linux_*.deb
-            release-assets/telorax_*_linux_*.rpm
+            release-assets/telorax.*-any.whl
+            release-assets/telorax.*-amd64.deb
+            release-assets/telorax.*-arm64.deb
+            release-assets/telorax.*-amd64.rpm
+            release-assets/telorax.*-arm64.rpm
             release-assets/SHA256SUMS
             release-assets/install.sh
             release-assets/deps.sh
+            release-assets/release-name.sh

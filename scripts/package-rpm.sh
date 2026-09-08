@@ -18,6 +18,10 @@ WHEEL_NAME="$(basename "${WHEEL_PATH}")"
 WORK="$(mktemp -d)"
 trap 'rm -rf "${WORK}"' EXIT
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=release-name.sh
+source "${SCRIPT_DIR}/release-name.sh"
+
 ROOT="${WORK}/root"
 mkdir -p "${ROOT}/opt/telorax/wheels" \
   "${ROOT}/usr/local/bin" \
@@ -82,6 +86,6 @@ cp "${WORK}/telorax.spec" "${HOME}/rpmbuild/SPECS/"
 rpmbuild -bb "${HOME}/rpmbuild/SPECS/telorax.spec"
 
 RPM_FILE="$(ls -1 "${HOME}/rpmbuild/RPMS/${RPM_ARCH}/telorax-${VERSION}"*.rpm | head -n 1)"
-OUT="telorax_${VERSION}_linux_${ARCH}.rpm"
+OUT="$(release_artifact_name "${VERSION}" "${ARCH}" rpm)"
 cp -f "${RPM_FILE}" "${OUT}"
 echo "Built ${OUT}"
