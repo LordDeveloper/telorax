@@ -21,6 +21,7 @@ _source_install_lib() {
 
   for path in "${candidates[@]}"; do
     if [[ -f "${path}" ]]; then
+      TELORAX_INSTALL_SOURCED=1
       # shellcheck source=/dev/null
       source "${path}"
       return

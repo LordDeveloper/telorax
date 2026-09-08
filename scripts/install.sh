@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+echo 'Telorax installer (loading...)' >&2
+
 REPO="${INSTALL_REPO:-LordDeveloper/telorax}"
 RELEASE_REPO_NAME="${RELEASE_REPO_NAME:-telorax}"
 ARCH="${INSTALL_ARCH:-}"
@@ -22,6 +24,7 @@ Telorax installer
 
 Usage:
   install.sh [install] [--skip-deps]
+  install.sh upgrade
   install.sh deps install|status|start|stop|restart|provision
 
 Examples:
@@ -161,14 +164,11 @@ _install_app() {
 
 _ensure_env_file() {
   mkdir -p "${CONFIG_DIR}"
-  if [[ -f "${ENV_FILE}" ]]; then
-    return
-  fi
-
-  if [[ -f "${CONFIG_DIR}/env.example" ]]; then
-    cp "${CONFIG_DIR}/env.example" "${ENV_FILE}"
-  else
-    cat > "${ENV_FILE}" <<'EOF'
+  if [[ ! -f "${ENV_FILE}" ]]; then
+    if [[ -f "${CONFIG_DIR}/env.example" ]]; then
+      cp "${CONFIG_DIR}/env.example" "${ENV_FILE}"
+    else
+      cat > "${ENV_FILE}" <<'EOF'
 APP_TIMEZONE=UTC
 APP_HOST=0.0.0.0
 APP_PORT=8000
@@ -190,12 +190,16 @@ REDIS_DB=0
 LOG_LEVEL=INFO
 LOG_JSON=true
 EOF
+    fi
+    echo "Created default config at ${ENV_FILE}"
   fi
-  chmod 600 "${ENV_FILE}"
-  if id telorax >/dev/null 2>&1; then
-    chown telorax:telorax "${ENV_FILE}"
+
+  if [[ -f "${ENV_FILE}" ]]; then
+    chmod 600 "${ENV_FILE}"
+    if id telorax >/dev/null 2>&1; then
+      chown telorax:telorax "${ENV_FILE}"
+    fi
   fi
-  echo "Created default config at ${ENV_FILE}"
 }
 
 _enable_telorax_service() {
@@ -213,6 +217,11 @@ _install_all() {
 
   echo 'Installing Telorax application package ...'
   _install_app "${tag}"
+
+  if command -v telorax >/dev/null 2>&1; then
+    echo 'Running database migrations ...'
+    telorax migrate || true
+  fi
 
   if [[ "${SKIP_DEPS}" != 1 ]]; then
     echo "Installing infrastructure dependencies (mode: ${DEPS_MODE}) ..."
@@ -275,15 +284,11 @@ main() {
           *) echo "Unknown option: $1" >&2; _usage; exit 1 ;;
         esac
       done
-      local tag
-      echo "Fetching latest release from github.com/${REPO} ..."
-      tag="$(_fetch_latest_tag)"
-      if [[ -z "${tag}" ]]; then
-        echo 'Could not resolve latest release tag.' >&2
-        exit 1
-      fi
-      _source_deps "${tag}"
-      _install_all "${tag}"
+      _run_install
+      ;;
+    upgrade)
+      SKIP_DEPS=1
+      _run_install
       ;;
     *)
       echo "Unknown command: ${command}" >&2
@@ -293,12 +298,26 @@ main() {
   esac
 }
 
+_run_install() {
+  local tag
+  echo "Fetching latest release from github.com/${REPO} ..."
+  tag="$(_fetch_latest_tag)"
+  if [[ -z "${tag}" ]]; then
+    echo 'Could not resolve latest release tag.' >&2
+    exit 1
+  fi
+  _source_deps "${tag}"
+  _install_all "${tag}"
+}
+
 _script_is_entrypoint() {
+  if [[ "${TELORAX_INSTALL_SOURCED:-}" == 1 ]]; then
+    return 1
+  fi
   if [[ -n "${BASH_SOURCE[0]:-}" ]]; then
     [[ "${BASH_SOURCE[0]}" == "${0}" ]]
     return
   fi
-  # curl ... | bash — no script path in BASH_SOURCE; run the installer.
   return 0
 }
 
