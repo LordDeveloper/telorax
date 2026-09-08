@@ -131,7 +131,7 @@ SHA256SUMS
 git clone https://github.com/LordDeveloper/telorax.git
 cd telorax
 python -m pip install -e ".[dev]"
-export TELORAX_CONFIG=./.env
+export ENV_FILE=./.env
 pytest
 ruff check .
 mypy telorax/

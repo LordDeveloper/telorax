@@ -19,7 +19,7 @@ _DB_DRIVERS = {
 
 
 def default_env_path() -> Path:
-    if override := os.getenv('TELORAX_CONFIG'):
+    if override := os.getenv('ENV_FILE'):
         return Path(override)
     return CONFIG_DIR / ENV_FILENAME
 
@@ -96,7 +96,7 @@ class Settings(BaseSettings):
     email_default_2fa_password: SecretStr = SecretStr('')
 
     # Security
-    master_key_env: str = 'TELORAX_MASTER_KEY'
+    master_key: SecretStr | None = None
 
     # Logging
     log_level: str = 'INFO'

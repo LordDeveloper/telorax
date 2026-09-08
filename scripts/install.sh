@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO="${TELORAX_REPO:-LordDeveloper/telorax}"
-ARCH="${TELORAX_ARCH:-amd64}"
-CONFIG_DIR="${TELORAX_CONFIG_DIR:-/etc/telorax}"
+REPO="${INSTALL_REPO:-LordDeveloper/telorax}"
+ARCH="${INSTALL_ARCH:-amd64}"
+CONFIG_DIR="${CONFIG_DIR:-/etc/telorax}"
 ENV_FILE="${CONFIG_DIR}/.env"
 
 if [[ "$(id -u)" -ne 0 ]]; then
