@@ -53,7 +53,8 @@ Telorax Telegram account automation platform.
 
 %install
 rm -rf %{buildroot}
-cp -a ${ROOT}/* %{buildroot}/
+mkdir -p %{buildroot}
+cp -a ${ROOT}/. %{buildroot}/
 
 %files
 /opt/telorax
