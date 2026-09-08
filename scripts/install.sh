@@ -73,16 +73,24 @@ _require_root() {
   fi
 }
 
+_detect_arch() {
+  case "$(uname -m)" in
+    x86_64) ARCH=amd64 ;;
+    aarch64|arm64) ARCH=arm64 ;;
+    *)
+      echo "Unsupported architecture: $(uname -m). Supported: amd64, arm64." >&2
+      exit 1
+      ;;
+  esac
+}
+
 _require_linux() {
   if [[ "$(uname -s)" != 'Linux' ]]; then
     echo 'Telorax releases are currently built for Linux only.' >&2
     exit 1
   fi
 
-  if [[ "$(uname -m)" != 'x86_64' ]]; then
-    echo "Unsupported architecture: $(uname -m). Only amd64 is supported." >&2
-    exit 1
-  fi
+  _detect_arch
 }
 
 _fetch_latest_tag() {
@@ -93,24 +101,35 @@ _fetch_latest_tag() {
 
 _install_app() {
   local tag="$1"
-  local version deb_name deb_url tmp_deb
+  local version pkg_name pkg_url tmp_pkg
   version="${tag#v}"
-  deb_name="telorax_${version}_linux_${ARCH}.deb"
-  deb_url="https://github.com/${REPO}/releases/download/${tag}/${deb_name}"
-  tmp_deb="$(mktemp /tmp/telorax.XXXXXX.deb)"
 
-  echo "Downloading ${deb_url} ..."
-  curl -fsSL -o "${tmp_deb}" "${deb_url}"
-
-  echo 'Installing Telorax package ...'
   if command -v dpkg >/dev/null 2>&1; then
-    dpkg -i "${tmp_deb}" || apt-get install -f -y
-  else
-    echo 'dpkg not found. Install dpkg or use the binary install method from README.' >&2
-    rm -f "${tmp_deb}"
-    exit 1
+    pkg_name="telorax_${version}_linux_${ARCH}.deb"
+    pkg_url="https://github.com/${REPO}/releases/download/${tag}/${pkg_name}"
+    tmp_pkg="$(mktemp /tmp/telorax.XXXXXX.deb)"
+    echo "Downloading ${pkg_url} ..."
+    curl -fsSL -o "${tmp_pkg}" "${pkg_url}"
+    echo 'Installing Telorax package (deb) ...'
+    dpkg -i "${tmp_pkg}" || apt-get install -f -y
+    rm -f "${tmp_pkg}"
+    return
   fi
-  rm -f "${tmp_deb}"
+
+  if command -v rpm >/dev/null 2>&1; then
+    pkg_name="telorax_${version}_linux_${ARCH}.rpm"
+    pkg_url="https://github.com/${REPO}/releases/download/${tag}/${pkg_name}"
+    tmp_pkg="$(mktemp /tmp/telorax.XXXXXX.rpm)"
+    echo "Downloading ${pkg_url} ..."
+    curl -fsSL -o "${tmp_pkg}" "${pkg_url}"
+    echo 'Installing Telorax package (rpm) ...'
+    rpm -Uvh "${tmp_pkg}"
+    rm -f "${tmp_pkg}"
+    return
+  fi
+
+  echo 'Neither dpkg nor rpm found. Install a supported package manager or use the wheel method from README.' >&2
+  exit 1
 }
 
 _ensure_env_file() {

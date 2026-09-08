@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="${1:?usage: package-deb.sh VERSION}"
+VERSION="${1:?usage: package-deb.sh VERSION ARCH WHEEL_PATH}"
 ARCH="${2:-amd64}"
 WHEEL_PATH="${3:?usage: package-deb.sh VERSION ARCH WHEEL_PATH}"
 PKG_ROOT="telorax_${VERSION}_linux_${ARCH}"
+DEB_FILE="telorax_${VERSION}_linux_${ARCH}.deb"
 WHEEL_NAME="$(basename "${WHEEL_PATH}")"
 
 mkdir -p "${PKG_ROOT}/DEBIAN" \
@@ -52,5 +53,6 @@ systemctl daemon-reload || true
 EOF
 chmod 755 "${PKG_ROOT}/DEBIAN/postinst"
 
-dpkg-deb --build "${PKG_ROOT}"
-mv "${PKG_ROOT}.deb" "telorax_${VERSION}_linux_${ARCH}.deb"
+dpkg-deb --build "${PKG_ROOT}" "${DEB_FILE}"
+rm -rf "${PKG_ROOT}"
+echo "Built ${DEB_FILE}"
