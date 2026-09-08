@@ -151,6 +151,57 @@ export const OPERATION_STATES = [
   { code: 7, name: 'CANCELLED', description: 'Cancelled before completion.' },
 ]
 
+export const ACCOUNT_SUMMARY_EXAMPLE = {
+  id: 7,
+  msisdn: 989121234567,
+  state: 'ACTIVE',
+  country_iso: 'IR',
+  reliability_score: 100,
+  is_operational: true,
+}
+
+export const ACCOUNT_DETAIL_EXAMPLE = {
+  ...ACCOUNT_SUMMARY_EXAMPLE,
+  telegram_user_id: 123456789,
+  telegram_username: 'demo_user',
+  display_name: 'Demo User',
+  is_rate_limited: false,
+  rate_limited_until: null,
+  restricted_until: null,
+  last_online_at: null,
+  two_factor_confirmed_at: null,
+  foreign_sessions_revoked_at: null,
+  last_engaged_at: null,
+  account_ttl_configured: false,
+  proxy_label: null,
+  notes: null,
+  provisioned_at: '2026-03-08T12:00:00Z',
+  created_at: '2026-03-08T12:00:00Z',
+  updated_at: '2026-03-08T12:00:00Z',
+}
+
+export const ACCOUNT_STATS_EXAMPLE = {
+  total: 120,
+  operational: 95,
+  by_state: {
+    ACTIVE: 95,
+    RATE_LIMITED: 10,
+    STANDBY: 8,
+    DEACTIVATED: 7,
+  },
+}
+
+export const ACCOUNT_STATES = [
+  { code: 0, name: 'DEACTIVATED', description: 'Removed from the operational pool.' },
+  { code: 1, name: 'ACTIVE', description: 'Ready for worker dispatch.' },
+  { code: 2, name: 'RATE_LIMITED', description: 'Temporarily throttled by Telegram.' },
+  { code: 3, name: 'STANDBY', description: 'Healthy but held back from dispatch.' },
+  { code: 4, name: 'DUPLICATE', description: 'Session key conflict detected.' },
+  { code: 5, name: 'RESTRICTED', description: 'Account restricted by Telegram.' },
+  { code: 6, name: 'SESSION_EXPIRED', description: 'Session is no longer valid.' },
+  { code: 10, name: 'PROVISIONING', description: 'Import or onboarding in progress.' },
+]
+
 export const ENDPOINTS = [
   {
     id: 'health',
@@ -204,6 +255,86 @@ export const ENDPOINTS = [
     },
     responseExample: { ...OPERATION_SUMMARY_EXAMPLE, completed: 0, remaining: 500, state: 'QUEUED', progress_ratio: 0 },
     statusCodes: [201, 422],
+  },
+  {
+    id: 'accounts-list',
+    method: 'GET',
+    path: '/v1/accounts',
+    title: 'List accounts',
+    description: 'Browse the account pool with pagination and optional filters. Requires HTTP Basic auth.',
+    queryParams: [
+      { name: 'limit', type: 'integer', default: '50', description: 'Max results (1–500).' },
+      { name: 'offset', type: 'integer', default: '0', description: 'Pagination offset.' },
+      { name: 'state', type: 'string', description: 'Filter by AccountState name, e.g. ACTIVE.' },
+      { name: 'country', type: 'string', description: 'Filter by ISO country code.' },
+    ],
+    responseExample: {
+      items: [ACCOUNT_SUMMARY_EXAMPLE],
+      total: 1,
+      limit: 50,
+      offset: 0,
+    },
+    statusCodes: [200, 401],
+  },
+  {
+    id: 'accounts-stats',
+    method: 'GET',
+    path: '/v1/accounts/stats',
+    title: 'Account pool stats',
+    description: 'Aggregate counts by state for monitoring pool health.',
+    responseExample: ACCOUNT_STATS_EXAMPLE,
+    statusCodes: [200, 401],
+  },
+  {
+    id: 'accounts-get',
+    method: 'GET',
+    path: '/v1/accounts/{id}',
+    title: 'Get account',
+    description: 'Detailed account view without exposing the encrypted session payload.',
+    responseExample: ACCOUNT_DETAIL_EXAMPLE,
+    statusCodes: [200, 401, 404],
+  },
+  {
+    id: 'accounts-update',
+    method: 'PATCH',
+    path: '/v1/accounts/{id}',
+    title: 'Update account',
+    description: 'Adjust operational metadata such as state, notes, proxy label, or reliability score.',
+    bodyExample: {
+      state: 'STANDBY',
+      notes: 'Cooling down after rate limit',
+      reliability_score: 80,
+    },
+    responseExample: { ...ACCOUNT_DETAIL_EXAMPLE, state: 'STANDBY', notes: 'Cooling down after rate limit', reliability_score: 80 },
+    statusCodes: [200, 401, 404, 422],
+  },
+  {
+    id: 'accounts-deactivate',
+    method: 'POST',
+    path: '/v1/accounts/{id}/deactivate',
+    title: 'Deactivate account',
+    description: 'Move an account out of the operational pool without deleting history.',
+    responseExample: { ...ACCOUNT_DETAIL_EXAMPLE, state: 'DEACTIVATED', is_operational: false },
+    statusCodes: [200, 401, 404],
+  },
+  {
+    id: 'accounts-import',
+    method: 'POST',
+    path: '/v1/accounts/import',
+    title: 'Import session',
+    description: 'Upload a Telethon or Pyrogram .session file. Optionally renew via QR login like the legacy Matrix importer.',
+    bodyExample: {
+      file: '(multipart .session file)',
+      password: 'optional-2fa-password',
+      renew: true,
+      ignore_2fa: false,
+      ignore_revoke: false,
+    },
+    responseExample: {
+      created: true,
+      account: ACCOUNT_DETAIL_EXAMPLE,
+    },
+    statusCodes: [201, 401, 422],
   },
 ]
 

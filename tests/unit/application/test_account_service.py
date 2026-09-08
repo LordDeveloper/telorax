@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from telorax.application.services.account_service import AccountService
+from telorax.core.config.settings import Settings
 from telorax.core.enums import AccountState
 from telorax.domain.entities import Account
 
@@ -27,7 +28,7 @@ async def test_list_operational_accounts() -> None:
     ) as unit_of_work_cls:
         unit_of_work_cls.return_value.__aenter__ = AsyncMock(return_value=unit_of_work)
         unit_of_work_cls.return_value.__aexit__ = AsyncMock(return_value=None)
-        service = AccountService(session_factory=session_factory)
+        service = AccountService(session_factory=session_factory, settings=Settings())
         summaries = await service.list_operational(limit=10)
 
     assert len(summaries) == 1

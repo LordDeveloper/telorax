@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 
 from telorax.core.enums import AccountState, OperationState, OperationType
 from telorax.domain.entities import Account, Operation
@@ -136,8 +136,77 @@ class SQLAlchemyAccountRepository(AccountRepository):
             reliability_score=account.reliability_score,
             proxy_label=account.proxy_label,
             notes=account.notes,
+            provisioned_at=account.provisioned_at,
+            two_factor_confirmed_at=account.two_factor_confirmed_at,
+            foreign_sessions_revoked_at=account.foreign_sessions_revoked_at,
         )
         self._session.add(row)
+        await self._session.flush()
+        return _to_account(row)
+
+    async def list_accounts(
+        self,
+        *,
+        state: AccountState | None = None,
+        country_iso: str | None = None,
+        limit: int,
+        offset: int,
+    ) -> list[Account]:
+        query = select(schema.Account).order_by(schema.Account.id.desc()).limit(limit).offset(offset)
+        if state is not None:
+            query = query.where(schema.Account.state == state.value)
+        if country_iso:
+            query = query.where(schema.Account.country_iso == country_iso)
+        result = await self._session.execute(query)
+        return [_to_account(row) for row in result.scalars()]
+
+    async def count_accounts(
+        self,
+        *,
+        state: AccountState | None = None,
+        country_iso: str | None = None,
+    ) -> int:
+        query = select(func.count()).select_from(schema.Account)
+        if state is not None:
+            query = query.where(schema.Account.state == state.value)
+        if country_iso:
+            query = query.where(schema.Account.country_iso == country_iso)
+        result = await self._session.execute(query)
+        return int(result.scalar_one())
+
+    async def count_by_state(self) -> dict[AccountState, int]:
+        result = await self._session.execute(
+            select(schema.Account.state, func.count())
+            .group_by(schema.Account.state),
+        )
+        return {AccountState(state): int(count) for state, count in result.all()}
+
+    async def update(self, account: Account) -> Account:
+        row = await self._session.get(schema.Account, account.id)
+        if row is None:
+            msg = f'Account {account.id} not found'
+            raise ValueError(msg)
+        row.msisdn = account.msisdn
+        row.session_ciphertext = account.session_ciphertext
+        row.state = account.state.value
+        row.country_iso = account.country_iso
+        row.telegram_user_id = account.telegram_user_id
+        row.telegram_username = account.telegram_username
+        row.display_name = account.display_name
+        row.telegram_app_id = account.telegram_app_id
+        row.telegram_app_hash = account.telegram_app_hash
+        row.two_factor_secret = account.two_factor_secret
+        row.reliability_score = account.reliability_score
+        row.rate_limited_until = account.rate_limited_until
+        row.restricted_until = account.restricted_until
+        row.last_online_at = account.last_online_at
+        row.two_factor_confirmed_at = account.two_factor_confirmed_at
+        row.foreign_sessions_revoked_at = account.foreign_sessions_revoked_at
+        row.last_engaged_at = account.last_engaged_at
+        row.account_ttl_configured = account.account_ttl_configured
+        row.proxy_label = account.proxy_label
+        row.notes = account.notes
+        row.provisioned_at = account.provisioned_at
         await self._session.flush()
         return _to_account(row)
 

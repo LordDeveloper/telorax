@@ -70,6 +70,7 @@ class Settings(BaseSettings):
     # Telegram
     telegram_default_api_id: int = 0
     telegram_default_api_hash: str = ''
+    telegram_apps_file: str = ''
     telegram_connection_timeout: int = 1
     telegram_connection_retries: int = 0
     telegram_request_retries: int = 0

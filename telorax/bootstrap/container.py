@@ -41,6 +41,7 @@ class Container(containers.DeclarativeContainer):
     account_service = providers.Singleton(
         AccountService,
         session_factory=session_factory,
+        settings=config,
     )
 
     application = providers.Singleton(Application, container=__self__)

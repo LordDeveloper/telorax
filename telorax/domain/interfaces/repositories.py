@@ -25,6 +25,26 @@ class AccountRepository(Protocol):
 
     async def create(self, account: Account) -> Account: ...
 
+    async def list_accounts(
+        self,
+        *,
+        state: AccountState | None = None,
+        country_iso: str | None = None,
+        limit: int,
+        offset: int,
+    ) -> list[Account]: ...
+
+    async def count_accounts(
+        self,
+        *,
+        state: AccountState | None = None,
+        country_iso: str | None = None,
+    ) -> int: ...
+
+    async def count_by_state(self) -> dict[AccountState, int]: ...
+
+    async def update(self, account: Account) -> Account: ...
+
 
 class OperationRepository(Protocol):
     async def get_by_id(self, operation_id: int) -> Operation | None: ...

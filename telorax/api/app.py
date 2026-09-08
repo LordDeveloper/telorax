@@ -9,6 +9,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from telorax import __version__
+from telorax.api.routes.v1.accounts import router as accounts_router
 from telorax.api.routes.v1.operations import router as operations_router
 from telorax.api.routes.v1.status import router as status_router
 
@@ -41,6 +42,7 @@ def create_fastapi_app(container: Container) -> FastAPI:
     app.state.container = container
     app.include_router(status_router, prefix='/v1', tags=['status'])
     app.include_router(operations_router, prefix='/v1')
+    app.include_router(accounts_router, prefix='/v1')
 
     docs_dir = _resolve_docs_dir()
     if docs_dir is not None:
