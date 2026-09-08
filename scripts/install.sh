@@ -289,6 +289,17 @@ main() {
   esac
 }
 
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+_script_is_entrypoint() {
+  if [[ -n "${BASH_SOURCE[0]:-}" ]]; then
+    [[ "${BASH_SOURCE[0]}" == "${0}" ]]
+    return
+  fi
+  case "${0}" in
+    bash | */bash | sh | */sh) return 0 ;;
+  esac
+  return 1
+}
+
+if _script_is_entrypoint; then
   main "$@"
 fi
