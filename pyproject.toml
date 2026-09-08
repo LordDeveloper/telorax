@@ -66,6 +66,8 @@ select = ['E', 'F', 'W', 'I', 'N', 'UP', 'B', 'A', 'COM', 'C4', 'DTZ', 'T20', 'I
 'telorax/cli/actions.py' = ['T201', 'PLC0415', 'TC001']
 'telorax/cli/app.py' = ['PLC0415']
 'telorax/cli/commands/migrate.py' = ['PLC0415']
+'telorax/cli/commands/service.py' = ['PLC0415']
+'telorax/cli/commands/config.py' = ['PLC0415']
 'telorax/infrastructure/database/models/*' = ['TC003']
 
 [tool.ruff.lint.mccabe]

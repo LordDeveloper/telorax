@@ -8,6 +8,28 @@ from telorax.application.services.health_service import HealthService
 from telorax.core.config.settings import Settings
 
 
+def _mock_api_health(*, port_open: bool = True, telorax: bool = True) -> tuple[MagicMock, MagicMock]:
+    response = MagicMock()
+    response.status_code = 200 if telorax else 404
+    response.json.return_value = {'status': 'healthy'} if telorax else {}
+
+    client = AsyncMock()
+    client.get = AsyncMock(return_value=response)
+    client.__aenter__ = AsyncMock(return_value=client)
+    client.__aexit__ = AsyncMock(return_value=None)
+
+    return (
+        patch(
+            'telorax.application.services.health_service.is_port_open',
+            return_value=port_open,
+        ),
+        patch(
+            'telorax.application.services.health_service.httpx.AsyncClient',
+            return_value=client,
+        ),
+    )
+
+
 @pytest.mark.asyncio
 async def test_health_report_marks_missing_config_as_degraded() -> None:
     settings = Settings()
@@ -42,7 +64,12 @@ async def test_health_report_all_ok(tmp_path, monkeypatch) -> None:
     engine = MagicMock()
     engine.connect.return_value = connection
 
-    with patch('telorax.application.services.health_service.redis.from_url') as redis_from_url:
+    port_patch, client_patch = _mock_api_health()
+    with (
+        port_patch,
+        client_patch,
+        patch('telorax.application.services.health_service.redis.from_url') as redis_from_url,
+    ):
         redis_client = AsyncMock()
         redis_client.ping = AsyncMock()
         redis_client.aclose = AsyncMock()
@@ -66,7 +93,12 @@ async def test_run_diagnostics(tmp_path, monkeypatch) -> None:
     engine = MagicMock()
     engine.connect.return_value = connection
 
-    with patch('telorax.application.services.health_service.redis.from_url') as redis_from_url:
+    port_patch, client_patch = _mock_api_health()
+    with (
+        port_patch,
+        client_patch,
+        patch('telorax.application.services.health_service.redis.from_url') as redis_from_url,
+    ):
         redis_client = AsyncMock()
         redis_client.ping = AsyncMock()
         redis_client.aclose = AsyncMock()
@@ -103,3 +135,18 @@ async def test_redis_health_down() -> None:
         component = await service._redis_health()
 
     assert component.status == 'down'
+
+
+@pytest.mark.asyncio
+async def test_api_health_detects_foreign_service() -> None:
+    settings = Settings()
+    engine = MagicMock()
+    service = HealthService(settings=settings, db_engine=engine)
+
+    port_patch, client_patch = _mock_api_health(telorax=False)
+    with port_patch, client_patch:
+        component = await service._api_health()
+
+    assert component.status == 'degraded'
+    assert component.detail is not None
+    assert 'not Telorax' in component.detail

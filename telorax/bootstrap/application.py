@@ -40,6 +40,10 @@ class Application:
 
         await self.start()
         settings = self._container.config()
+
+        from telorax.core.network import ensure_port_available
+
+        ensure_port_available(settings.app.host, settings.app.port)
         app = create_fastapi_app(self._container)
 
         config = uvicorn.Config(

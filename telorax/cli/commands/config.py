@@ -1,4 +1,5 @@
 import contextlib
+from http import HTTPStatus
 from pathlib import Path
 
 import typer
@@ -43,6 +44,28 @@ def validate_config() -> None:
     typer.echo(f'Config valid: {env_path}')
     typer.echo(f'Listen: {settings.app_host}:{settings.app_port}')
     typer.echo(f'Database: {settings.db_connection}://{settings.db_host}/{settings.db_name}')
+
+    from telorax.core.network import is_port_open, probe_host
+
+    if is_port_open(settings.app_host, settings.app_port):
+        target = probe_host(settings.app_host)
+        try:
+            import httpx
+
+            response = httpx.get(
+                f'http://{target}:{settings.app_port}/v1/health',
+                timeout=2.0,
+            )
+            if response.status_code != HTTPStatus.OK:
+                typer.secho(
+                    f'Warning: port {settings.app_port} is in use but does not look like Telorax.',
+                    fg=typer.colors.YELLOW,
+                )
+        except Exception:
+            typer.secho(
+                f'Warning: port {settings.app_port} is in use on {target}.',
+                fg=typer.colors.YELLOW,
+            )
 
 
 def _default_env_content() -> str:

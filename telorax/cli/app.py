@@ -8,6 +8,7 @@ from telorax.bootstrap.container import Container
 from telorax.cli.commands.config import config_app
 from telorax.cli.commands.deps import deps_app
 from telorax.cli.commands.migrate import migrate_app
+from telorax.cli.commands.service import service_app
 from telorax.cli.commands.version import version_command
 from telorax.cli.console import is_interactive
 from telorax.cli.menu import run_interactive
@@ -22,6 +23,7 @@ app = typer.Typer(
 app.add_typer(config_app, name='config')
 app.add_typer(deps_app, name='deps')
 app.add_typer(migrate_app, name='migrate')
+app.add_typer(service_app, name='service')
 
 
 @app.callback(invoke_without_command=True)
@@ -39,7 +41,11 @@ def serve_command() -> None:
     container = Container()
     container.wire()
     application = container.application()
-    asyncio.run(application.run_server())
+    try:
+        asyncio.run(application.run_server())
+    except RuntimeError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=1) from exc
 
 
 @app.command('version')
