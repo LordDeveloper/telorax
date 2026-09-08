@@ -13,21 +13,46 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  building:
+    name: Building
     if: ${{ github.event_name == 'pull_request' || !contains(github.event.head_commit.message, '[skip ci]') }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Cache Nuitka build
+        if: github.event_name == 'push'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/Nuitka
+            ~/.cache/ccache
+          key: nuitka-${{ runner.os }}-${{ hashFiles('pyproject.toml', 'telorax/**/*.py') }}
+          restore-keys: |
+            nuitka-${{ runner.os }}-
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
+          if [ "${{ github.event_name }}" = "push" ]; then
+            pip install nuitka ordered-set zstandard
+          fi
+
+      - name: Install build tools
+        if: github.event_name == 'push'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends python3-dev gcc patchelf ccache
 
       - name: Ruff
         run: ruff check telorax tests
@@ -38,30 +63,8 @@ jobs:
       - name: Pytest
         run: pytest --cov=telorax --cov-report=term-missing
 
-  release:
-    needs: test
-    if: >-
-      ${{
-        github.event_name == 'push'
-        && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-        && !contains(github.event.head_commit.message, '[skip ci]')
-      }}
-    runs-on: ubuntu-22.04
-    concurrency:
-      group: telorax-release
-      cancel-in-progress: false
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
       - name: Determine next version
+        if: github.event_name == 'push'
         id: version
         run: |
           git fetch --tags --force
@@ -82,25 +85,22 @@ jobs:
           echo "Next release: ${NEXT_TAG}"
 
       - name: Sync project version
+        if: github.event_name == 'push'
         run: |
           VERSION='${{ steps.version.outputs.version }}'
           sed -i "s/^version = .*/version = '${VERSION}'/" pyproject.toml
           sed -i "s/^__version__ = .*/__version__ = '${VERSION}'/" telorax/__init__.py
 
-      - name: Install build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3-dev gcc patchelf
-          python -m pip install --upgrade pip
-          pip install -e ".[dev]"
-          pip install nuitka ordered-set zstandard
-
       - name: Build binary
+        if: github.event_name == 'push'
+        env:
+          CCACHE_DIR: ~/.cache/ccache
         run: |
           mkdir -p dist
           python -m nuitka \
             --standalone \
             --onefile \
+            --jobs=$(nproc) \
             --output-dir=dist \
             --output-filename=telorax \
             --include-package=telorax \
@@ -109,6 +109,7 @@ jobs:
           dist/telorax version
 
       - name: Build .deb package
+        if: github.event_name == 'push'
         run: |
           VERSION='${{ steps.version.outputs.version }}'
           ARCH='amd64'
@@ -147,6 +148,7 @@ jobs:
           mv "${PKG_ROOT}.deb" "telorax_${VERSION}_linux_${ARCH}.deb"
 
       - name: Prepare release assets
+        if: github.event_name == 'push'
         run: |
           VERSION='${{ steps.version.outputs.version }}'
           mkdir -p release-assets
@@ -158,6 +160,55 @@ jobs:
             cd release-assets
             sha256sum telorax telorax_*.deb > SHA256SUMS
           )
+          echo "${{ steps.version.outputs.tag }}" > release-assets/RELEASE_TAG.txt
+
+      - name: Upload release assets
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-assets
+          path: release-assets/
+          retention-days: 1
+
+  releasing:
+    name: Releasing new version
+    needs: building
+    if: >-
+      ${{
+        github.event_name == 'push'
+        && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        && !contains(github.event.head_commit.message, '[skip ci]')
+      }}
+    runs-on: ubuntu-latest
+    concurrency:
+      group: telorax-release
+      cancel-in-progress: false
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download release assets
+        uses: actions/download-artifact@v4
+        with:
+          name: release-assets
+          path: release-assets
+
+      - name: Read release tag
+        id: version
+        run: |
+          TAG=$(tr -d '\r\n' < release-assets/RELEASE_TAG.txt)
+          VERSION="${TAG#v}"
+          echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+
+      - name: Sync project version
+        run: |
+          VERSION='${{ steps.version.outputs.version }}'
+          sed -i "s/^version = .*/version = '${VERSION}'/" pyproject.toml
+          sed -i "s/^__version__ = .*/__version__ = '${VERSION}'/" telorax/__init__.py
 
       - name: Commit version bump and tag
         run: |
