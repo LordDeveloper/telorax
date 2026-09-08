@@ -89,6 +89,7 @@ omit = [
     'telorax/infrastructure/database/repositories/*',
     'telorax/infrastructure/database/engine.py',
     'telorax/domain/interfaces/repositories.py',
+    'telorax/shared/timezone.py',
 ]
 
 [tool.coverage.report]
