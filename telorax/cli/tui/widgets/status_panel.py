@@ -24,5 +24,5 @@ class StatusPanel(Static):
 [cyan]Database[/]       [yellow]● Not checked[/]
 [cyan]Redis[/]          [yellow]● Not checked[/]
 [cyan]Operational Accounts[/] 0
-[cyan]Queued Campaigns[/]     0
+[cyan]Queued Operations[/]     0
 [cyan]Rate Limited[/]        0'''

@@ -10,10 +10,10 @@ if TYPE_CHECKING:
 
 
 @dataclass(slots=True)
-class CampaignDispatch:
-    """Record that an account executed a campaign (dedup + audit)."""
+class OperationDispatch:
+    """Record that an account executed an operation (dedup + audit)."""
 
-    campaign_id: int
+    operation_id: int
     account_id: int
     outcome: DispatchOutcome
     dispatched_at: datetime

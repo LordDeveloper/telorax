@@ -6,12 +6,12 @@ import pytest
 
 from telorax.application.services.account_service import AccountService
 from telorax.core.enums import AccountState
-from telorax.domain.entities import TelegramAccount
+from telorax.domain.entities import Account
 
 
 @pytest.mark.asyncio
 async def test_list_operational_accounts() -> None:
-    account = TelegramAccount(
+    account = Account(
         id=1,
         msisdn=989121234567,
         session_ciphertext='cipher',
@@ -19,7 +19,7 @@ async def test_list_operational_accounts() -> None:
         country_iso='IR',
     )
     unit_of_work = AsyncMock()
-    unit_of_work.telegram_accounts.list_operational = AsyncMock(return_value=[account])
+    unit_of_work.accounts.list_operational = AsyncMock(return_value=[account])
     session_factory = MagicMock()
 
     with patch(

@@ -3,14 +3,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from telorax.core.enums import CampaignState, EngagementKind
+from telorax.core.enums import EngagementKind, OperationState
 
 if TYPE_CHECKING:
     from datetime import datetime
 
 
 @dataclass(slots=True)
-class Campaign:
+class Operation:
     """Batch request to perform one engagement kind on Telegram."""
 
     id: int
@@ -18,7 +18,7 @@ class Campaign:
     target_count: int
     fulfilled_count: int
     target_spec: dict[str, Any]
-    state: CampaignState = CampaignState.QUEUED
+    state: OperationState = OperationState.QUEUED
     dedup_fingerprint: str | None = None
     retry_attempts: int = 0
     priority: int = 0
@@ -47,6 +47,6 @@ class Campaign:
 
     def dispatch_key_for(self, account_id: int) -> str:
         if not self.dedup_fingerprint:
-            msg = f'Campaign {self.id} has no dedup fingerprint'
+            msg = f'Operation {self.id} has no dedup fingerprint'
             raise ValueError(msg)
         return f'{self.dedup_fingerprint}:{account_id}'

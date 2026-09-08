@@ -2,17 +2,17 @@ from __future__ import annotations
 
 from typing import Any
 
-from telorax.application.dto.campaign import CreateCampaignDTO
+from telorax.application.dto.operation import CreateOperationDTO
 from telorax.core.enums import EngagementKind
-from telorax.core.exceptions import CampaignValidationError
+from telorax.core.exceptions import OperationValidationError
 
 
-def validate_create_campaign(dto: CreateCampaignDTO) -> None:
+def validate_create_operation(dto: CreateOperationDTO) -> None:
     if dto.target_count <= 0:
-        raise CampaignValidationError('target_count must be greater than zero')
+        raise OperationValidationError('target_count must be greater than zero')
 
     if not dto.target_spec:
-        raise CampaignValidationError('target_spec is required')
+        raise OperationValidationError('target_spec is required')
 
     if dto.engagement_kind in {
         EngagementKind.VIEW,
@@ -23,10 +23,10 @@ def validate_create_campaign(dto: CreateCampaignDTO) -> None:
         EngagementKind.BUTTON_CLICK,
         EngagementKind.BOT_START,
     } and 'peer_ref' not in dto.target_spec:
-        raise CampaignValidationError('target_spec.peer_ref is required for this engagement kind')
+        raise OperationValidationError('target_spec.peer_ref is required for this engagement kind')
 
     if dto.engagement_kind == EngagementKind.POLL_VOTE and 'option' not in dto.target_spec:
-        raise CampaignValidationError('target_spec.option is required for POLL_VOTE campaigns')
+        raise OperationValidationError('target_spec.option is required for POLL_VOTE operations')
 
     _validate_target_spec_values(dto.target_spec)
 
@@ -34,4 +34,4 @@ def validate_create_campaign(dto: CreateCampaignDTO) -> None:
 def _validate_target_spec_values(target_spec: dict[str, Any]) -> None:
     peer_ref = target_spec.get('peer_ref')
     if peer_ref is not None and not isinstance(peer_ref, (str, int)):
-        raise CampaignValidationError('target_spec.peer_ref must be a string or integer')
+        raise OperationValidationError('target_spec.peer_ref must be a string or integer')

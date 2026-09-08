@@ -5,20 +5,20 @@ from telorax.core.exceptions.account import (
     AccountSessionExpiredError,
 )
 from telorax.core.exceptions.base import TeloraxError
-from telorax.core.exceptions.campaign import (
-    AlreadySubscribedError,
-    CampaignValidationError,
-    EngagementExecutionError,
-    InvalidReactionError,
-    TargetInaccessibleError,
-    TargetNotFoundError,
-    UnsupportedEngagementKindError,
-)
 from telorax.core.exceptions.infrastructure import (
     DatabaseConnectionError,
     InfrastructureError,
     RedisConnectionError,
     TelegramConnectionError,
+)
+from telorax.core.exceptions.operation import (
+    AlreadySubscribedError,
+    EngagementExecutionError,
+    InvalidReactionError,
+    OperationValidationError,
+    TargetInaccessibleError,
+    TargetNotFoundError,
+    UnsupportedEngagementKindError,
 )
 
 __all__ = [
@@ -27,11 +27,11 @@ __all__ = [
     'AccountRestrictedError',
     'AccountSessionExpiredError',
     'AlreadySubscribedError',
-    'CampaignValidationError',
     'DatabaseConnectionError',
     'EngagementExecutionError',
     'InfrastructureError',
     'InvalidReactionError',
+    'OperationValidationError',
     'RedisConnectionError',
     'TargetInaccessibleError',
     'TargetNotFoundError',

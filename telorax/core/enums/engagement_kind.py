@@ -2,7 +2,7 @@ from enum import IntEnum
 
 
 class EngagementKind(IntEnum):
-    """Kind of Telegram engagement requested by a campaign."""
+    """Kind of Telegram engagement requested by an operation."""
 
     VIEW = 1
     SUBSCRIBE = 2

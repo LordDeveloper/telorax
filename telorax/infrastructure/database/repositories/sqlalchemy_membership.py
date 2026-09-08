@@ -5,16 +5,16 @@ from typing import TYPE_CHECKING
 from sqlalchemy import select
 
 from telorax.core.enums import PeerKind
-from telorax.domain.entities import ChannelMembership
-from telorax.domain.interfaces.repositories import ChannelMembershipRepository
-from telorax.infrastructure.database.models import ChannelMembershipModel
+from telorax.domain.entities import Membership
+from telorax.domain.interfaces.repositories import MembershipRepository
+from telorax.infrastructure.database.models import MembershipModel
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
 
-def _to_membership(model: ChannelMembershipModel) -> ChannelMembership:
-    return ChannelMembership(
+def _to_membership(model: MembershipModel) -> Membership:
+    return Membership(
         id=model.id,
         account_id=model.account_id,
         telegram_peer_id=model.telegram_peer_id,
@@ -29,12 +29,12 @@ def _to_membership(model: ChannelMembershipModel) -> ChannelMembership:
     )
 
 
-class SQLAlchemyChannelMembershipRepository(ChannelMembershipRepository):
+class SQLAlchemyMembershipRepository(MembershipRepository):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def record(self, membership: ChannelMembership) -> ChannelMembership:
-        model = ChannelMembershipModel(
+    async def record(self, membership: Membership) -> Membership:
+        model = MembershipModel(
             account_id=membership.account_id,
             telegram_peer_id=membership.telegram_peer_id,
             username=membership.username,
@@ -50,12 +50,12 @@ class SQLAlchemyChannelMembershipRepository(ChannelMembershipRepository):
         await self._session.flush()
         return _to_membership(model)
 
-    async def list_due_for_unsubscribe(self, *, limit: int) -> list[ChannelMembership]:
+    async def list_due_for_unsubscribe(self, *, limit: int) -> list[Membership]:
         result = await self._session.execute(
-            select(ChannelMembershipModel)
-            .where(ChannelMembershipModel.is_active.is_(True))
-            .where(ChannelMembershipModel.unsubscribe_scheduled_at.is_not(None))
-            .order_by(ChannelMembershipModel.unsubscribe_scheduled_at.asc())
+            select(MembershipModel)
+            .where(MembershipModel.is_active.is_(True))
+            .where(MembershipModel.unsubscribe_scheduled_at.is_not(None))
+            .order_by(MembershipModel.unsubscribe_scheduled_at.asc())
             .limit(limit),
         )
         return [_to_membership(model) for model in result.scalars()]

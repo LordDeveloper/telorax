@@ -1,6 +1,6 @@
-from telorax.domain.entities.campaign import Campaign
-from telorax.domain.entities.campaign_dispatch import CampaignDispatch
-from telorax.domain.entities.channel_membership import ChannelMembership
-from telorax.domain.entities.telegram_account import TelegramAccount
+from telorax.domain.entities.account import Account
+from telorax.domain.entities.membership import Membership
+from telorax.domain.entities.operation import Operation
+from telorax.domain.entities.operation_dispatch import OperationDispatch
 
-__all__ = ['Campaign', 'CampaignDispatch', 'ChannelMembership', 'TelegramAccount']
+__all__ = ['Account', 'Membership', 'Operation', 'OperationDispatch']

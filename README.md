@@ -1,6 +1,6 @@
 # Telorax
 
-Platform اتوماسیون Telegram account — مدیریت farm اکانت و اجرای campaignهای engagement.
+Platform اتوماسیون Telegram account — مدیریت farm اکانت و اجرای operationهای engagement.
 
 ---
 
@@ -49,12 +49,14 @@ sudo systemctl enable --now telorax
 telorax doctor
 ```
 
-### روش ۳ — باینری standalone
+### روش ۳ — wheel (بدون .deb)
 
 ```bash
 TAG=$(curl -fsSL https://api.github.com/repos/LordDeveloper/telorax/releases/latest | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)
-curl -fsSL -o /tmp/telorax "https://github.com/LordDeveloper/telorax/releases/download/${TAG}/telorax"
-sudo install -m 755 /tmp/telorax /usr/local/bin/telorax
+VERSION="${TAG#v}"
+python3 -m venv /opt/telorax/venv
+/opt/telorax/venv/bin/pip install "https://github.com/LordDeveloper/telorax/releases/download/${TAG}/telorax-${VERSION}-py3-none-any.whl"
+sudo ln -sf /opt/telorax/venv/bin/telorax /usr/local/bin/telorax
 telorax version
 ```
 

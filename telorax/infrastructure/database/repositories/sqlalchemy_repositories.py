@@ -5,17 +5,17 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import or_, select
 
-from telorax.core.enums import AccountState, CampaignState, EngagementKind
-from telorax.domain.entities import Campaign, TelegramAccount
-from telorax.domain.interfaces.repositories import CampaignRepository, TelegramAccountRepository
-from telorax.infrastructure.database.models import CampaignModel, TelegramAccountModel
+from telorax.core.enums import AccountState, EngagementKind, OperationState
+from telorax.domain.entities import Account, Operation
+from telorax.domain.interfaces.repositories import AccountRepository, OperationRepository
+from telorax.infrastructure.database.models import AccountModel, OperationModel
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
 
-def _to_account(model: TelegramAccountModel) -> TelegramAccount:
-    return TelegramAccount(
+def _to_account(model: AccountModel) -> Account:
+    return Account(
         id=model.id,
         msisdn=model.msisdn,
         session_ciphertext=model.session_ciphertext,
@@ -43,14 +43,14 @@ def _to_account(model: TelegramAccountModel) -> TelegramAccount:
     )
 
 
-def _to_campaign(model: CampaignModel) -> Campaign:
-    return Campaign(
+def _to_operation(model: OperationModel) -> Operation:
+    return Operation(
         id=model.id,
         engagement_kind=EngagementKind(model.engagement_kind),
         target_count=model.target_count,
         fulfilled_count=model.fulfilled_count,
         target_spec=model.target_spec or {},
-        state=CampaignState(model.state),
+        state=OperationState(model.state),
         dedup_fingerprint=model.dedup_fingerprint,
         retry_attempts=model.retry_attempts,
         priority=model.priority,
@@ -65,17 +65,17 @@ def _to_campaign(model: CampaignModel) -> Campaign:
     )
 
 
-class SQLAlchemyTelegramAccountRepository(TelegramAccountRepository):
+class SQLAlchemyAccountRepository(AccountRepository):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def get_by_id(self, account_id: int) -> TelegramAccount | None:
-        model = await self._session.get(TelegramAccountModel, account_id)
+    async def get_by_id(self, account_id: int) -> Account | None:
+        model = await self._session.get(AccountModel, account_id)
         return _to_account(model) if model else None
 
-    async def get_by_msisdn(self, msisdn: int) -> TelegramAccount | None:
+    async def get_by_msisdn(self, msisdn: int) -> Account | None:
         result = await self._session.execute(
-            select(TelegramAccountModel).where(TelegramAccountModel.msisdn == msisdn),
+            select(AccountModel).where(AccountModel.msisdn == msisdn),
         )
         model = result.scalar_one_or_none()
         return _to_account(model) if model else None
@@ -85,37 +85,37 @@ class SQLAlchemyTelegramAccountRepository(TelegramAccountRepository):
         *,
         limit: int,
         country_iso: str | None = None,
-    ) -> list[TelegramAccount]:
+    ) -> list[Account]:
         now = datetime.now(tz=UTC)
         query = (
-            select(TelegramAccountModel)
-            .where(TelegramAccountModel.state == AccountState.ACTIVE.value)
+            select(AccountModel)
+            .where(AccountModel.state == AccountState.ACTIVE.value)
             .where(
                 or_(
-                    TelegramAccountModel.rate_limited_until.is_(None),
-                    TelegramAccountModel.rate_limited_until < now,
+                    AccountModel.rate_limited_until.is_(None),
+                    AccountModel.rate_limited_until < now,
                 ),
             )
-            .order_by(TelegramAccountModel.reliability_score.desc())
+            .order_by(AccountModel.reliability_score.desc())
             .limit(limit)
         )
         if country_iso:
-            query = query.where(TelegramAccountModel.country_iso == country_iso)
+            query = query.where(AccountModel.country_iso == country_iso)
         result = await self._session.execute(query)
         return [_to_account(model) for model in result.scalars()]
 
     async def update_state(self, account_id: int, state: AccountState) -> None:
-        model = await self._session.get(TelegramAccountModel, account_id)
+        model = await self._session.get(AccountModel, account_id)
         if model:
             model.state = state.value
 
     async def update_reliability_score(self, account_id: int, score: int) -> None:
-        model = await self._session.get(TelegramAccountModel, account_id)
+        model = await self._session.get(AccountModel, account_id)
         if model:
             model.reliability_score = score
 
-    async def create(self, account: TelegramAccount) -> TelegramAccount:
-        model = TelegramAccountModel(
+    async def create(self, account: Account) -> Account:
+        model = AccountModel(
             msisdn=account.msisdn,
             session_ciphertext=account.session_ciphertext,
             state=account.state.value,
@@ -135,47 +135,47 @@ class SQLAlchemyTelegramAccountRepository(TelegramAccountRepository):
         return _to_account(model)
 
 
-class SQLAlchemyCampaignRepository(CampaignRepository):
+class SQLAlchemyOperationRepository(OperationRepository):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def get_by_id(self, campaign_id: int) -> Campaign | None:
-        model = await self._session.get(CampaignModel, campaign_id)
-        return _to_campaign(model) if model else None
+    async def get_by_id(self, operation_id: int) -> Operation | None:
+        model = await self._session.get(OperationModel, operation_id)
+        return _to_operation(model) if model else None
 
-    async def list_queued(self, *, limit: int) -> list[Campaign]:
+    async def list_queued(self, *, limit: int) -> list[Operation]:
         result = await self._session.execute(
-            select(CampaignModel)
-            .where(CampaignModel.state == CampaignState.QUEUED.value)
-            .order_by(CampaignModel.priority.desc(), CampaignModel.id.asc())
+            select(OperationModel)
+            .where(OperationModel.state == OperationState.QUEUED.value)
+            .order_by(OperationModel.priority.desc(), OperationModel.id.asc())
             .limit(limit),
         )
-        return [_to_campaign(model) for model in result.scalars()]
+        return [_to_operation(model) for model in result.scalars()]
 
-    async def create(self, campaign: Campaign) -> Campaign:
-        model = CampaignModel(
-            engagement_kind=campaign.engagement_kind.value,
-            target_count=campaign.target_count,
-            fulfilled_count=campaign.fulfilled_count,
-            target_spec=campaign.target_spec,
-            state=campaign.state.value,
-            dedup_fingerprint=campaign.dedup_fingerprint,
-            priority=campaign.priority,
-            country_filter=campaign.country_filter,
-            source_label=campaign.source_label,
+    async def create(self, operation: Operation) -> Operation:
+        model = OperationModel(
+            engagement_kind=operation.engagement_kind.value,
+            target_count=operation.target_count,
+            fulfilled_count=operation.fulfilled_count,
+            target_spec=operation.target_spec,
+            state=operation.state.value,
+            dedup_fingerprint=operation.dedup_fingerprint,
+            priority=operation.priority,
+            country_filter=operation.country_filter,
+            source_label=operation.source_label,
         )
         self._session.add(model)
         await self._session.flush()
-        return _to_campaign(model)
+        return _to_operation(model)
 
     async def update_fulfillment(
         self,
-        campaign_id: int,
+        operation_id: int,
         *,
         fulfilled_count: int,
-        state: CampaignState,
+        state: OperationState,
     ) -> None:
-        model = await self._session.get(CampaignModel, campaign_id)
+        model = await self._session.get(OperationModel, operation_id)
         if model:
             model.fulfilled_count = fulfilled_count
             model.state = state.value

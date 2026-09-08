@@ -6,26 +6,26 @@ import pytest
 from fastapi.testclient import TestClient
 
 from telorax.api.app import create_fastapi_app
-from telorax.api.routes.v1.campaigns import _parse_engagement_kind
+from telorax.api.routes.v1.operations import _parse_engagement_kind
 from telorax.bootstrap.container import Container
 from telorax.core.enums import EngagementKind
-from telorax.core.exceptions import CampaignValidationError
+from telorax.core.exceptions import OperationValidationError
 
 
-def test_list_queued_campaigns(api_client: TestClient) -> None:
-    response = api_client.get('/v1/campaigns/queued')
+def test_list_queued_operations(api_client: TestClient) -> None:
+    response = api_client.get('/v1/operations/queued')
     assert response.status_code == 200
     assert response.json() == []
 
 
-def test_get_campaign_not_found(api_client: TestClient) -> None:
-    response = api_client.get('/v1/campaigns/999')
+def test_get_operation_not_found(api_client: TestClient) -> None:
+    response = api_client.get('/v1/operations/999')
     assert response.status_code == 404
 
 
-def test_create_campaign(api_client: TestClient) -> None:
+def test_create_operation(api_client: TestClient) -> None:
     response = api_client.post(
-        '/v1/campaigns',
+        '/v1/operations',
         json={
             'engagement_kind': 'VIEW',
             'target_count': 10,
@@ -38,16 +38,16 @@ def test_create_campaign(api_client: TestClient) -> None:
     assert payload['engagement_kind'] == EngagementKind.VIEW.value
 
 
-def test_create_campaign_validation_error() -> None:
+def test_create_operation_validation_error() -> None:
     container = Container()
-    campaign_service = AsyncMock()
-    campaign_service.create_campaign = AsyncMock(
-        side_effect=CampaignValidationError('invalid payload'),
+    operation_service = AsyncMock()
+    operation_service.create_operation = AsyncMock(
+        side_effect=OperationValidationError('invalid payload'),
     )
-    container.campaign_service.override(campaign_service)
+    container.operation_service.override(operation_service)
     client = TestClient(create_fastapi_app(container))
     response = client.post(
-        '/v1/campaigns',
+        '/v1/operations',
         json={
             'engagement_kind': 1,
             'target_count': 10,
@@ -58,5 +58,5 @@ def test_create_campaign_validation_error() -> None:
 
 
 def test_parse_engagement_kind_invalid() -> None:
-    with pytest.raises(CampaignValidationError):
+    with pytest.raises(OperationValidationError):
         _parse_engagement_kind({'invalid': True})

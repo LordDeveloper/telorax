@@ -6,8 +6,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from telorax.api.app import create_fastapi_app
-from telorax.application.dto.campaign import CampaignSummaryDTO
 from telorax.application.dto.health import ComponentHealthDTO, HealthReportDTO
+from telorax.application.dto.operation import OperationSummaryDTO
 from telorax.bootstrap.container import Container
 from telorax.core.enums import EngagementKind
 
@@ -15,11 +15,11 @@ from telorax.core.enums import EngagementKind
 @pytest.fixture
 def api_client() -> TestClient:
     container = Container()
-    campaign_service = AsyncMock()
-    campaign_service.list_queued = AsyncMock(return_value=[])
-    campaign_service.get_campaign = AsyncMock(return_value=None)
-    campaign_service.create_campaign = AsyncMock(
-        return_value=CampaignSummaryDTO(
+    operation_service = AsyncMock()
+    operation_service.list_queued = AsyncMock(return_value=[])
+    operation_service.get_operation = AsyncMock(return_value=None)
+    operation_service.create_operation = AsyncMock(
+        return_value=OperationSummaryDTO(
             id=1,
             engagement_kind=EngagementKind.VIEW,
             target_count=10,
@@ -41,7 +41,7 @@ def api_client() -> TestClient:
             ),
         ),
     )
-    container.campaign_service.override(campaign_service)
+    container.operation_service.override(operation_service)
     container.health_service.override(health_service)
     app = create_fastapi_app(container)
     return TestClient(app)

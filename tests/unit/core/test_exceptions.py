@@ -2,17 +2,17 @@ from __future__ import annotations
 
 from telorax.core.exceptions import (
     AccountRateLimitedError,
-    CampaignValidationError,
     DatabaseConnectionError,
+    OperationValidationError,
     TargetNotFoundError,
     TeloraxError,
 )
 
 
 def test_domain_exceptions_expose_message() -> None:
-    validation = CampaignValidationError('bad campaign')
-    assert validation.message == 'bad campaign'
-    assert str(validation) == 'bad campaign'
+    validation = OperationValidationError('bad operation')
+    assert validation.message == 'bad operation'
+    assert str(validation) == 'bad operation'
 
 
 def test_account_and_infrastructure_exceptions() -> None:
@@ -21,6 +21,6 @@ def test_account_and_infrastructure_exceptions() -> None:
 
 
 def test_target_not_found_error_fields() -> None:
-    error = TargetNotFoundError(campaign_id=9, target_ref='@missing')
-    assert error.campaign_id == 9
+    error = TargetNotFoundError(operation_id=9, target_ref='@missing')
+    assert error.operation_id == 9
     assert error.target_ref == '@missing'

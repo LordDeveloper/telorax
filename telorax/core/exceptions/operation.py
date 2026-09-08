@@ -5,7 +5,7 @@ class DomainError(TeloraxError):
     """Business rule violation."""
 
 
-class CampaignValidationError(DomainError):
+class OperationValidationError(DomainError):
     def __init__(self, message: str) -> None:
         super().__init__(message)
         self.message = message
@@ -25,9 +25,9 @@ class UnsupportedEngagementKindError(DomainError):
 
 
 class TargetNotFoundError(DomainError):
-    def __init__(self, campaign_id: int, target_ref: str) -> None:
-        super().__init__(f'Target {target_ref} not found for campaign {campaign_id}')
-        self.campaign_id = campaign_id
+    def __init__(self, operation_id: int, target_ref: str) -> None:
+        super().__init__(f'Target {target_ref} not found for operation {operation_id}')
+        self.operation_id = operation_id
         self.target_ref = target_ref
 
 

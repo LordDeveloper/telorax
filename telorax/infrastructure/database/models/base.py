@@ -12,8 +12,8 @@ class Base(DeclarativeBase):
     pass
 
 
-class TelegramAccountModel(Base):
-    __tablename__ = 'telegram_accounts'
+class AccountModel(Base):
+    __tablename__ = 'accounts'
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     msisdn: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False, index=True)
@@ -45,8 +45,8 @@ class TelegramAccountModel(Base):
     )
 
 
-class CampaignModel(Base):
-    __tablename__ = 'campaigns'
+class OperationModel(Base):
+    __tablename__ = 'operations'
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     engagement_kind: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
@@ -71,10 +71,10 @@ class CampaignModel(Base):
     )
 
 
-class CampaignDispatchModel(Base):
-    __tablename__ = 'campaign_dispatches'
+class OperationDispatchModel(Base):
+    __tablename__ = 'operation_dispatches'
 
-    campaign_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    operation_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     account_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     outcome: Mapped[int] = mapped_column(Integer, default=1)
     error_code: Mapped[str | None] = mapped_column(String(64))
@@ -84,8 +84,8 @@ class CampaignDispatchModel(Base):
     )
 
 
-class ChannelMembershipModel(Base):
-    __tablename__ = 'channel_memberships'
+class MembershipModel(Base):
+    __tablename__ = 'memberships'
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     account_id: Mapped[int] = mapped_column(BigInteger, index=True)
@@ -126,11 +126,11 @@ class AccountPeerBindingModel(Base):
     bound_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
-class CampaignFailureModel(Base):
-    __tablename__ = 'campaign_failures'
+class OperationFailureModel(Base):
+    __tablename__ = 'operation_failures'
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    campaign_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    operation_id: Mapped[int] = mapped_column(BigInteger, index=True)
     account_id: Mapped[int] = mapped_column(BigInteger, index=True)
     error_message: Mapped[str] = mapped_column(Text)
     error_code: Mapped[str | None] = mapped_column(String(64))

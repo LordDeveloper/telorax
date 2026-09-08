@@ -1,21 +1,21 @@
 from telorax.infrastructure.database.models.base import (
+    AccountModel,
     AccountPeerBindingModel,
     Base,
-    CampaignDispatchModel,
-    CampaignFailureModel,
-    CampaignModel,
-    ChannelMembershipModel,
+    MembershipModel,
+    OperationDispatchModel,
+    OperationFailureModel,
+    OperationModel,
     PeerSnapshotModel,
-    TelegramAccountModel,
 )
 
 __all__ = [
+    'AccountModel',
     'AccountPeerBindingModel',
     'Base',
-    'CampaignDispatchModel',
-    'CampaignFailureModel',
-    'CampaignModel',
-    'ChannelMembershipModel',
+    'MembershipModel',
+    'OperationDispatchModel',
+    'OperationFailureModel',
+    'OperationModel',
     'PeerSnapshotModel',
-    'TelegramAccountModel',
 ]

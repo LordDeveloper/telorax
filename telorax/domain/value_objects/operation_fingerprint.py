@@ -21,7 +21,7 @@ _TRANSIENT_SPEC_KEYS = frozenset({
 })
 
 
-def build_campaign_fingerprint(
+def build_operation_fingerprint(
     engagement_kind: EngagementKind,
     target_spec: dict[str, Any],
 ) -> str:

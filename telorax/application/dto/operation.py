@@ -7,7 +7,7 @@ from telorax.core.enums import EngagementKind
 
 
 @dataclass(frozen=True, slots=True)
-class CreateCampaignDTO:
+class CreateOperationDTO:
     engagement_kind: EngagementKind
     target_count: int
     target_spec: dict[str, Any]
@@ -17,7 +17,7 @@ class CreateCampaignDTO:
 
 
 @dataclass(frozen=True, slots=True)
-class CampaignSummaryDTO:
+class OperationSummaryDTO:
     id: int
     engagement_kind: EngagementKind
     target_count: int

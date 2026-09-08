@@ -7,7 +7,7 @@ from textual.widgets.option_list import Option
 MENU_ITEMS: list[tuple[str, str]] = [
     ('1', 'Setup wizard'),
     ('2', 'Worker engine'),
-    ('3', 'Campaigns'),
+    ('3', 'Operations'),
     ('4', 'Accounts'),
     ('5', 'Session import'),
     ('6', 'Configuration'),

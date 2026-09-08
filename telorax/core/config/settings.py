@@ -77,7 +77,7 @@ class Settings(BaseSettings):
     # Worker
     worker_cycle_interval_seconds: int = 15
     worker_max_concurrent_accounts: int = 500
-    worker_campaign_batch_size: int = 100
+    worker_operation_batch_size: int = 100
     worker_isolated_account_limit: int = 30
     worker_reshot_account_limit: int = 100
     worker_reshot_groups: list[str] = []
@@ -182,7 +182,7 @@ class Settings(BaseSettings):
         return SimpleNamespace(
             cycle_interval_seconds=self.worker_cycle_interval_seconds,
             max_concurrent_accounts=self.worker_max_concurrent_accounts,
-            campaign_batch_size=self.worker_campaign_batch_size,
+            operation_batch_size=self.worker_operation_batch_size,
             isolated_account_limit=self.worker_isolated_account_limit,
             reshot_account_limit=self.worker_reshot_account_limit,
             reshot_groups=self.worker_reshot_groups,

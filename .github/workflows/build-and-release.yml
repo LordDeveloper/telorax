@@ -32,14 +32,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
           if [ "${{ github.event_name }}" = "push" ]; then
-            pip install nuitka ordered-set zstandard
+            pip install build
           fi
-
-      - name: Install build tools
-        if: github.event_name == 'push'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends gcc patchelf
 
       - name: Ruff
         run: ruff check telorax tests
@@ -50,26 +44,19 @@ jobs:
       - name: Pytest
         run: pytest --cov=telorax --cov-report=term-missing
 
-      - name: Build binary
+      - name: Build wheel
         if: github.event_name == 'push'
         run: |
-          python -m nuitka \
-            --standalone \
-            --onefile \
-            --jobs=$(nproc) \
-            --output-dir=dist \
-            --output-filename=telorax \
-            --include-package=telorax \
-            telorax/cli/app.py
-          chmod +x dist/telorax
-          dist/telorax version
+          python -m build --wheel --outdir dist
+          ls -lh dist/
 
-      - name: Upload binary
+      - name: Upload wheel
         if: github.event_name == 'push'
         uses: actions/upload-artifact@v4
         with:
-          name: telorax-binary
-          path: dist/telorax
+          name: telorax-wheel
+          path: dist/*.whl
+          if-no-files-found: error
           retention-days: 1
 
   releasing:
@@ -92,10 +79,10 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Download binary
+      - name: Download wheel
         uses: actions/download-artifact@v4
         with:
-          name: telorax-binary
+          name: telorax-wheel
           path: dist
 
       - name: Determine next version
@@ -126,16 +113,17 @@ jobs:
       - name: Build release assets
         run: |
           VERSION='${{ steps.version.outputs.version }}'
+          WHEEL="$(ls -1 dist/*.whl | head -n 1)"
           chmod +x scripts/package-deb.sh
-          scripts/package-deb.sh "${VERSION}" amd64 dist/telorax
+          scripts/package-deb.sh "${VERSION}" amd64 "${WHEEL}"
           mkdir -p release-assets
-          cp dist/telorax release-assets/telorax
+          cp "${WHEEL}" release-assets/
           cp "telorax_${VERSION}_linux_amd64.deb" release-assets/
           cp scripts/install.sh release-assets/
           cp scripts/deps.sh release-assets/
           (
             cd release-assets
-            sha256sum telorax telorax_*.deb > SHA256SUMS
+            sha256sum ./*.whl telorax_*.deb > SHA256SUMS
           )
           ls -lh release-assets/
 
@@ -160,7 +148,7 @@ jobs:
           generate_release_notes: true
           make_latest: true
           files: |
-            release-assets/telorax
+            release-assets/*.whl
             release-assets/telorax_*_linux_*.deb
             release-assets/SHA256SUMS
             release-assets/install.sh
