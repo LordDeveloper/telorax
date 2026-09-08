@@ -120,7 +120,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: telorax-android-apk
-          path: android-agent/android/app/build/outputs/apk/release/app-arm64-v8a-release.apk
+          path: android-agent/android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 1
 
@@ -298,7 +298,7 @@ jobs:
           cp scripts/upgrade.sh release-assets/
           cp scripts/deps.sh release-assets/
           cp scripts/release-name.sh release-assets/
-          mv release-assets/app-arm64-v8a-release.apk "release-assets/telorax-agent.${VERSION}-arm64-v8a.apk"
+          mv release-assets/app-release.apk "release-assets/telorax-agent.${VERSION}-arm64-v8a.apk"
           (
             cd release-assets
             sha256sum "${RELEASE_REPO_NAME}.${VERSION}-"* telorax-agent.${VERSION}-arm64-v8a.apk > SHA256SUMS
