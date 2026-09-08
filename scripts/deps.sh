@@ -423,10 +423,7 @@ _script_is_entrypoint() {
     [[ "${BASH_SOURCE[0]}" == "${0}" ]]
     return
   fi
-  case "${0}" in
-    bash | */bash | sh | */sh) return 0 ;;
-  esac
-  return 1
+  return 0
 }
 
 if _script_is_entrypoint; then

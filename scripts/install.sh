@@ -249,6 +249,7 @@ _handle_deps_command() {
 }
 
 main() {
+  echo 'Telorax installer'
   _require_root
   _require_linux
 
@@ -294,10 +295,8 @@ _script_is_entrypoint() {
     [[ "${BASH_SOURCE[0]}" == "${0}" ]]
     return
   fi
-  case "${0}" in
-    bash | */bash | sh | */sh) return 0 ;;
-  esac
-  return 1
+  # curl ... | bash — no script path in BASH_SOURCE; run the installer.
+  return 0
 }
 
 if _script_is_entrypoint; then
