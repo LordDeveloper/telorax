@@ -4,14 +4,12 @@ import asyncio
 
 import typer
 
-from telorax import __version__
 from telorax.bootstrap.container import Container
 from telorax.cli.commands.config import config_app
 from telorax.cli.commands.deps import deps_app
 from telorax.cli.commands.migrate import migrate_app
 from telorax.cli.commands.version import version_command
 from telorax.cli.tui.app import run_dashboard
-from telorax.core.config.settings import default_env_path
 
 app = typer.Typer(
     name='telorax',
@@ -48,11 +46,21 @@ def version_cmd() -> None:
 @app.command('doctor')
 def doctor_command() -> None:
     """Run system diagnostics."""
-    env_path = default_env_path()
-    typer.echo(f'Config path: {env_path}')
-    typer.echo(f'Config exists: {env_path.is_file()}')
-    typer.echo(f'Version: {__version__}')
-    typer.echo('Status: OK')
+    container = Container()
+    container.wire(modules=['telorax.cli.app'])
+    health_service = container.health_service()
+
+    async def _run() -> None:
+        diagnostics = await health_service.run_diagnostics()
+        typer.echo(f'Config path: {diagnostics.config_path}')
+        typer.echo(f'Config exists: {diagnostics.config_exists}')
+        typer.echo(f'Version: {diagnostics.version}')
+        typer.echo(f'Status: {diagnostics.health.status}')
+        for component in diagnostics.health.components:
+            detail = f' ({component.detail})' if component.detail else ''
+            typer.echo(f'  - {component.name}: {component.status}{detail}')
+
+    asyncio.run(_run())
 
 
 def main() -> None:

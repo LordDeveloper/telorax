@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from textual.app import ComposeResult
 
 
-class DashboardScreen(Screen):
+class DashboardScreen(Screen[None]):
     def compose(self) -> ComposeResult:
         yield Vertical(
             HeaderLogo(),

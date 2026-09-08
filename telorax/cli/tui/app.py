@@ -7,7 +7,7 @@ from textual.widgets import Footer, Header
 from telorax.cli.tui.screens.dashboard import DashboardScreen
 
 
-class TeloraxApp(App):
+class TeloraxApp(App[None]):
     TITLE = 'Telorax'
     CSS_PATH = 'theme.tcss'
 
@@ -19,7 +19,7 @@ class TeloraxApp(App):
     def on_mount(self) -> None:
         self.push_screen(DashboardScreen())
 
-    def action_back(self) -> None:
+    async def action_back(self) -> None:
         if len(self.screen_stack) > 1:
             self.pop_screen()
 

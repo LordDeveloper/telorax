@@ -15,9 +15,9 @@ class StatusPanel(Static):
     '''
 
     def on_mount(self) -> None:
-        self.update(self._render())
+        self.update(self._status_text())
 
-    def _render(self) -> str:
+    def _status_text(self) -> str:
         return f'''[cyan]Version[/]        v{__version__}
 [cyan]Server[/]         [green]● Running[/]
 [cyan]Worker[/]         [green]● Idle[/]

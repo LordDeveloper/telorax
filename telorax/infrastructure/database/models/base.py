@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import BigInteger, Boolean, DateTime, Index, Integer, String, Text, func
 from sqlalchemy.dialects.mysql import JSON
@@ -54,7 +54,7 @@ class CampaignModel(Base):
     engagement_kind: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
     target_count: Mapped[int] = mapped_column(Integer, default=0)
     fulfilled_count: Mapped[int] = mapped_column(Integer, default=0)
-    target_spec: Mapped[dict | None] = mapped_column(JSON)
+    target_spec: Mapped[dict[str, Any] | None] = mapped_column(JSON)
     state: Mapped[int] = mapped_column(Integer, default=2, index=True)
     dedup_fingerprint: Mapped[str | None] = mapped_column(String(128), index=True)
     retry_attempts: Mapped[int] = mapped_column(Integer, default=0)
@@ -137,5 +137,5 @@ class CampaignFailureModel(Base):
     error_message: Mapped[str] = mapped_column(Text)
     error_code: Mapped[str | None] = mapped_column(String(64))
     attempt_count: Mapped[int] = mapped_column(Integer, default=0)
-    target_spec_snapshot: Mapped[dict | None] = mapped_column(JSON)
+    target_spec_snapshot: Mapped[dict[str, Any] | None] = mapped_column(JSON)
     failed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
