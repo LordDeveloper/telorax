@@ -8,7 +8,8 @@ ENV_FILE="${ENV_FILE:-${CONFIG_DIR}/.env}"
 TELORAX_ROOT="${TELORAX_ROOT:-/opt/telorax}"
 DEPS_MODE="${DEPS_MODE:-local}"  # local | system
 LOCAL_MYSQL_PORT="${LOCAL_MYSQL_PORT:-3307}"
-DEPS_SCRIPT_VERSION='2'
+LOCAL_REDIS_PORT="${LOCAL_REDIS_PORT:-6380}"
+DEPS_SCRIPT_VERSION='3'
 
 _load_env_value() {
   local key="$1"
