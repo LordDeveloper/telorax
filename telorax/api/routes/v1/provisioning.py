@@ -65,6 +65,21 @@ async def get_provisioning_job(
     return job.to_api_dict()
 
 
+@router.patch('/jobs/{job_id}/metadata', dependencies=[Depends(verify_api_credentials)])
+async def patch_provisioning_job_metadata(
+    job_id: int,
+    payload: dict[str, Any],
+    provisioning_service: Annotated[ProvisioningService, Depends(get_provisioning_service)],
+) -> dict[str, Any]:
+    try:
+        job = await provisioning_service.update_job_metadata(job_id, updates=dict(payload))
+    except ProvisioningJobNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except OperationValidationError as exc:
+        raise HTTPException(status_code=422, detail=exc.message) from exc
+    return job.to_api_dict()
+
+
 agent_router = APIRouter(
     prefix='/provisioning/agent',
     tags=['provisioning-agent'],
@@ -84,6 +99,40 @@ async def claim_provisioning_job(
     if job is None:
         response.status_code = 204
         return None
+    return job.to_api_dict()
+
+
+@agent_router.get('/jobs/{job_id}')
+async def get_claimed_provisioning_job(
+    job_id: int,
+    agent_id: Annotated[str, Depends(verify_signup_agent)],
+    provisioning_service: Annotated[ProvisioningService, Depends(get_provisioning_service)],
+) -> dict[str, Any]:
+    job = await provisioning_service.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail='Provisioning job not found')
+    if job.agent_id != agent_id or job.state is not ProvisioningState.CLAIMED:
+        raise HTTPException(status_code=403, detail='Job is not claimed by this agent')
+    return job.to_api_dict()
+
+
+@agent_router.patch('/jobs/{job_id}/metadata')
+async def patch_claimed_provisioning_job_metadata(
+    job_id: int,
+    payload: dict[str, Any],
+    agent_id: Annotated[str, Depends(verify_signup_agent)],
+    provisioning_service: Annotated[ProvisioningService, Depends(get_provisioning_service)],
+) -> dict[str, Any]:
+    try:
+        job = await provisioning_service.update_job_metadata(
+            job_id,
+            updates=dict(payload),
+            agent_id=agent_id,
+        )
+    except ProvisioningJobNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except OperationValidationError as exc:
+        raise HTTPException(status_code=422, detail=exc.message) from exc
     return job.to_api_dict()
 
 

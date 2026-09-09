@@ -96,6 +96,47 @@ class ProvisioningService:
             await unit_of_work.commit()
             return _to_dto(job)
 
+    async def update_job_metadata(
+        self,
+        job_id: int,
+        *,
+        updates: dict[str, object],
+        agent_id: str | None = None,
+    ) -> ProvisioningJobDTO:
+        async with SQLAlchemyUnitOfWork(self._session_factory) as unit_of_work:
+            job = await unit_of_work.provisioning_jobs.get_by_id(job_id)
+            if job is None:
+                raise ProvisioningJobNotFoundError(job_id)
+            if agent_id is not None and (
+                job.state is not ProvisioningState.CLAIMED or job.agent_id != agent_id
+            ):
+                msg = 'Job is not claimed by this agent'
+                raise OperationValidationError(msg)
+            metadata = dict(job.metadata)
+            metadata.update(updates)
+            saved = await unit_of_work.provisioning_jobs.update(
+                ProvisioningJob(
+                    id=job.id,
+                    msisdn=job.msisdn,
+                    state=job.state,
+                    provider=job.provider,
+                    country_iso=job.country_iso,
+                    first_name=job.first_name,
+                    last_name=job.last_name,
+                    two_factor_password=job.two_factor_password,
+                    agent_id=job.agent_id,
+                    account_id=job.account_id,
+                    failure_reason=job.failure_reason,
+                    metadata=metadata,
+                    claimed_at=job.claimed_at,
+                    completed_at=job.completed_at,
+                    created_at=job.created_at,
+                    updated_at=job.updated_at,
+                ),
+            )
+            await unit_of_work.commit()
+            return _to_dto(saved)
+
     async def complete_job(
         self,
         job_id: int,

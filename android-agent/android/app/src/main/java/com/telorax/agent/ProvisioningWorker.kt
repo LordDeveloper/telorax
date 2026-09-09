@@ -17,52 +17,56 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
-import java.util.concurrent.TimeUnit
 
 class ProvisioningWorker : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var loopJob: Job? = null
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(20, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .build()
+    private var activeJobId: Int? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
         createChannel()
-        startForeground(NOTIFICATION_ID, buildNotification("Waiting for Telegram automation"))
+        startForeground(NOTIFICATION_ID, buildNotification("Waiting for provisioning jobs"))
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         loopJob?.cancel()
         loopJob = scope.launch {
             val prefs = Prefs(this@ProvisioningWorker)
+            val api = AgentApiClient(this@ProvisioningWorker, prefs)
+            val orchestrator = SignupOrchestrator(api)
             while (isActive) {
                 if (prefs.agentToken.isBlank()) {
                     updateNotification("Configure agent token first")
                     delay(5_000)
                     continue
                 }
-                if (!CapabilityProbe.collect(this@ProvisioningWorker).optBoolean("can_perform_actions")) {
-                    updateNotification("Enable Telegram accessibility service")
+                if (!TeloraxAccessibilityService.isEnabled(this@ProvisioningWorker)) {
+                    updateNotification("Enable Telorax accessibility service")
                     delay(5_000)
                     continue
                 }
+                if (!VpnStatusMonitor.isVpnActive(this@ProvisioningWorker)) {
+                    updateNotification("Connect Amnezia VPN first")
+                    delay(5_000)
+                    continue
+                }
+                if (activeJobId != null) {
+                    delay(2_000)
+                    continue
+                }
                 runCatching {
-                    claimJob(prefs)
+                    processNextJob(api, orchestrator)
                 }.onSuccess { message ->
                     updateNotification(message)
                 }.onFailure {
-                    updateNotification("claim failed: ${it.message}")
+                    updateNotification(it.message ?: "provisioning failed")
                 }
-                delay(5_000)
+                delay(3_000)
             }
         }
         return START_STICKY
@@ -74,25 +78,20 @@ class ProvisioningWorker : Service() {
         super.onDestroy()
     }
 
-    private fun claimJob(prefs: Prefs): String {
-        val payload = JSONObject().put("provider", "android-agent")
-        val request = Request.Builder()
-            .url("${prefs.effectiveBaseUrl(this@ProvisioningWorker)}/v1/provisioning/agent/claim")
-            .addHeader("Content-Type", "application/json")
-            .addHeader("X-Telorax-Agent-Id", prefs.agentId)
-            .addHeader("X-Telorax-Agent-Token", prefs.agentToken)
-            .post(payload.toString().toRequestBody(JSON))
-            .build()
-        client.newCall(request).execute().use { response ->
-            if (response.code == 204) {
-                return "No provisioning jobs in queue"
+    private suspend fun processNextJob(api: AgentApiClient, orchestrator: SignupOrchestrator): String {
+        val claimed = withContext(Dispatchers.IO) { api.claimJob() } ?: return "No provisioning jobs in queue"
+        val jobId = claimed.getInt("id")
+        activeJobId = jobId
+        updateNotification("Running Telegram signup for job #$jobId")
+        return try {
+            orchestrator.runClaimedJob(claimed)
+        } catch (error: Exception) {
+            withContext(Dispatchers.IO) {
+                api.failJob(jobId, error.message ?: "Signup automation failed")
             }
-            if (!response.isSuccessful) {
-                throw IllegalStateException("HTTP ${response.code}")
-            }
-            val body = response.body?.string().orEmpty()
-            val job = JSONObject(body)
-            return "Claimed job #${job.optInt("id")} for +${job.optLong("msisdn")}"
+            throw error
+        } finally {
+            activeJobId = null
         }
     }
 
@@ -105,8 +104,7 @@ class ProvisioningWorker : Service() {
             "Telorax provisioning",
             NotificationManager.IMPORTANCE_LOW,
         )
-        val manager = getSystemService(NotificationManager::class.java)
-        manager.createNotificationChannel(channel)
+        getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
 
     private fun buildNotification(text: String): Notification =
@@ -118,14 +116,13 @@ class ProvisioningWorker : Service() {
             .build()
 
     private fun updateNotification(text: String) {
-        val manager = getSystemService(NotificationManager::class.java)
-        manager.notify(NOTIFICATION_ID, buildNotification(text))
+        getSystemService(NotificationManager::class.java)
+            .notify(NOTIFICATION_ID, buildNotification(text))
     }
 
     companion object {
         private const val CHANNEL_ID = "telorax_provisioning"
         private const val NOTIFICATION_ID = 42
-        private val JSON = "application/json; charset=utf-8".toMediaType()
 
         fun start(context: Context) {
             val intent = Intent(context, ProvisioningWorker::class.java)

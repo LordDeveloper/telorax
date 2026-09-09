@@ -5,18 +5,16 @@ import android.content.ComponentName
 import android.content.Context
 import android.view.accessibility.AccessibilityEvent
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 
 class TeloraxAccessibilityService : AccessibilityService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event?.packageName?.toString()?.startsWith("org.telegram.messenger") != true) {
             return
         }
-        val root = rootInActiveWindow
-        if (root != null) {
+        if (rootInActiveWindow != null) {
             canObserveUi.set(true)
-            if (event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED) {
-                canPerformActions.set(true)
-            }
+            canPerformActions.set(true)
         }
     }
 
@@ -25,12 +23,25 @@ class TeloraxAccessibilityService : AccessibilityService() {
     override fun onServiceConnected() {
         super.onServiceConnected()
         serviceConnected.set(true)
+        instance.set(this)
+    }
+
+    override fun onDestroy() {
+        instance.set(null)
+        serviceConnected.set(false)
+        super.onDestroy()
     }
 
     companion object {
         private val serviceConnected = AtomicBoolean(false)
         private val canObserveUi = AtomicBoolean(false)
         private val canPerformActions = AtomicBoolean(false)
+        private val instance = AtomicReference<TeloraxAccessibilityService?>(null)
+
+        fun requireService(): AccessibilityService {
+            return instance.get()
+                ?: throw IllegalStateException("Telorax accessibility service is not running")
+        }
 
         fun isEnabled(context: Context): Boolean {
             val enabled = android.provider.Settings.Secure.getString(

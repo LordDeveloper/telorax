@@ -3,7 +3,7 @@
     <string name="app_name">Telorax Agent</string>
     <string name="subtitle">Secure tunnel · Server sync · Telegram provisioning</string>
     <string name="accessibility_service_description">
-        Allows Telorax to observe and automate the official Telegram app for account provisioning.
+        Automates Telegram signup without taps: enters phone number, verification code from server, and profile name.
     </string>
     <string name="status_title">System status</string>
     <string name="status_vpn_off">VPN: disconnected</string>
@@ -26,10 +26,10 @@
     <string name="agent_token_hint">Agent token</string>
     <string name="save_settings">Save credentials</string>
     <string name="connect_server">Register &amp; sync</string>
-    <string name="step_telegram_title">STEP 3 · TELEGRAM</string>
+    <string name="step_telegram_title">STEP 3 · TELEGRAM SIGNUP</string>
     <string name="open_accessibility">Enable accessibility service</string>
     <string name="open_telegram">Open Telegram</string>
-    <string name="start_provisioning">Start signup worker</string>
+    <string name="start_provisioning">Start automatic signup worker</string>
     <string name="stop_provisioning">Stop signup worker</string>
     <string name="check_update">Check in-app update</string>
     <string name="log_placeholder">Activity log…</string>
