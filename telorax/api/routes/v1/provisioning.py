@@ -80,6 +80,27 @@ async def patch_provisioning_job_metadata(
     return job.to_api_dict()
 
 
+@router.post('/jobs/{job_id}/sms-code', dependencies=[Depends(verify_api_credentials)])
+async def submit_provisioning_sms_code(
+    job_id: int,
+    payload: dict[str, Any],
+    provisioning_service: Annotated[ProvisioningService, Depends(get_provisioning_service)],
+) -> dict[str, Any]:
+    code = str(payload.get('sms_code') or payload.get('code') or '').strip()
+    if not code:
+        raise HTTPException(status_code=422, detail='sms_code is required')
+    try:
+        job = await provisioning_service.update_job_metadata(
+            job_id,
+            updates={'sms_code': code, 'stage': 'sms_code_ready'},
+        )
+    except ProvisioningJobNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except OperationValidationError as exc:
+        raise HTTPException(status_code=422, detail=exc.message) from exc
+    return job.to_api_dict()
+
+
 agent_router = APIRouter(
     prefix='/provisioning/agent',
     tags=['provisioning-agent'],

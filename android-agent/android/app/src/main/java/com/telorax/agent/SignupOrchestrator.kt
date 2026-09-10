@@ -1,6 +1,5 @@
 package com.telorax.agent
 
-import android.accessibilityservice.AccessibilityService
 import kotlinx.coroutines.delay
 import org.json.JSONObject
 

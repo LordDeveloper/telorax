@@ -130,6 +130,33 @@ def api_client() -> TestClient:
     provisioning_service.list_jobs = AsyncMock(return_value=[])
     provisioning_service.get_job = AsyncMock(return_value=None)
     provisioning_service.claim_next_job = AsyncMock(return_value=None)
+
+    async def update_job_metadata(
+        job_id: int,
+        *,
+        updates: dict[str, object],
+        agent_id: str | None = None,
+    ):
+        return ProvisioningJobDTO(
+            id=job_id,
+            msisdn=989121234567,
+            state=ProvisioningState.QUEUED,
+            provider='android-agent',
+            country_iso='IR',
+            first_name='Demo',
+            last_name='User',
+            two_factor_password=None,
+            agent_id=agent_id,
+            account_id=None,
+            failure_reason=None,
+            metadata=dict(updates),
+            claimed_at=None,
+            completed_at=None,
+            created_at=None,
+            updated_at=None,
+        )
+
+    provisioning_service.update_job_metadata = AsyncMock(side_effect=update_job_metadata)
     mobile_agent_service = MagicMock()
     mobile_agent_service.register.return_value = {'device_id': 'android-01', 'status': 'registered'}
     mobile_agent_service.heartbeat.return_value = {'status': 'ok'}

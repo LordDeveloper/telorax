@@ -21,20 +21,30 @@ object TelegramUiAutomator {
     suspend fun runSignup(service: AccessibilityService, job: SignupJob, smsCodeProvider: suspend () -> String) {
         launchTelegram(service)
         delay(1500)
-        tapAny(service, startLabels)
+        waitAndTap(service, startLabels)
         delay(800)
-        tapAny(service, continueLabels)
+        waitAndTap(service, continueLabels)
         delay(800)
         setPhoneNumber(service, "+${job.msisdn}")
         delay(500)
-        tapAny(service, nextLabels)
+        waitAndTap(service, nextLabels)
         delay(1500)
         val smsCode = smsCodeProvider()
         enterVerificationCode(service, smsCode)
         delay(1200)
         enterName(service, job.firstName, job.lastName)
         delay(500)
-        tapAny(service, nextLabels + listOf("Done", "Sign up"))
+        waitAndTap(service, nextLabels + listOf("Done", "Sign up"))
+    }
+
+    private suspend fun waitAndTap(service: AccessibilityService, labels: List<String>, attempts: Int = 20) {
+        repeat(attempts) {
+            if (tapAny(service, labels)) {
+                return
+            }
+            delay(500)
+        }
+        throw IllegalStateException("UI control not found: ${labels.first()}")
     }
 
     private fun launchTelegram(service: AccessibilityService) {
@@ -106,7 +116,7 @@ object TelegramUiAutomator {
         }
         for (index in 0 until childCount) {
             val child = getChild(index) ?: continue
-            val found = child.findByText(text)
+            val found = child.findByText(search)
             if (found != null) {
                 return found
             }
