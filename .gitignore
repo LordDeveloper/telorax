@@ -15,4 +15,5 @@ docs/*.tsbuildinfo
 android-agent/android/.gradle/
 android-agent/android/**/build/
 android-agent/android/local.properties
+android-agent/android/keystore.properties
 android-agent/android/.idea/

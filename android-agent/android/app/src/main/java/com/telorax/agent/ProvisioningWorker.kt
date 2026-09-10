@@ -109,10 +109,12 @@ class ProvisioningWorker : Service() {
 
     private fun buildNotification(text: String): Notification =
         NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.stat_sys_download_done)
-            .setContentTitle("Telorax Agent")
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(getString(R.string.app_name))
             .setContentText(text)
             .setOngoing(true)
+            .setColor(getColor(R.color.primary))
+            .setColorized(true)
             .build()
 
     private fun updateNotification(text: String) {

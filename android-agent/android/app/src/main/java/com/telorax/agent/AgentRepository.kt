@@ -113,6 +113,10 @@ class Prefs(context: Context) {
         get() = storage.getBoolean("provisioning_enabled", false)
         set(value) { storage.edit().putBoolean("provisioning_enabled", value).apply() }
 
+    var installHelpShown: Boolean
+        get() = storage.getBoolean("install_help_shown", false)
+        set(value) { storage.edit().putBoolean("install_help_shown", value).apply() }
+
     fun effectiveBaseUrl(context: Context? = null): String {
         val vpnUp = context?.let { VpnStatusMonitor.isVpnActive(it) } ?: false
         return if (vpnUp && vpnBaseUrl.isNotBlank()) {

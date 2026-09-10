@@ -108,6 +108,27 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      - name: Cache release keystore
+        uses: actions/cache@v4
+        with:
+          path: android-agent/keystore/telorax-release.jks
+          key: telorax-release-keystore-v1
+
+      - name: Ensure release keystore
+        working-directory: android-agent
+        run: |
+          mkdir -p keystore
+          if [ ! -f keystore/telorax-release.jks ]; then
+            keytool -genkeypair -v \
+              -keystore keystore/telorax-release.jks \
+              -alias telorax \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass teloraxagent -keypass teloraxagent \
+              -dname "CN=Telorax Agent, OU=Mobile, O=Telorax, L=Tehran, ST=Tehran, C=IR"
+          fi
+          cp android/keystore.properties.example android/keystore.properties
+          sed -i 's/your-store-password/teloraxagent/g; s/your-key-password/teloraxagent/g' android/keystore.properties
+
       - name: Build arm64-v8a release APK
         working-directory: android-agent/android
         run: |

@@ -1,36 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Telorax Agent</string>
-    <string name="subtitle">Secure tunnel · Server sync · Telegram provisioning</string>
+    <string name="subtitle">Secure VPN tunnel · Server sync · Telegram signup</string>
     <string name="accessibility_service_description">
-        Automates Telegram signup without taps: enters phone number, verification code from server, and profile name.
+        Telorax Agent uses accessibility to automate Telegram signup: it enters the phone number,
+        verification code received from your server, and profile name. No taps are required after setup.
     </string>
-    <string name="status_title">System status</string>
-    <string name="status_vpn_off">VPN: disconnected</string>
-    <string name="status_vpn_on">VPN: connected</string>
-    <string name="status_server_unknown">Server: not connected</string>
-    <string name="status_server_ok">Server: online</string>
-    <string name="status_telegram_unknown">Telegram: checking…</string>
-    <string name="status_telegram_ready">Telegram: ready</string>
-    <string name="status_telegram_missing">Telegram: app not installed</string>
-    <string name="status_profile_none">Amnezia profile: none</string>
-    <string name="step_vpn_title">STEP 1 · AMNEZIA VPN</string>
-    <string name="step_vpn_desc">Import your Amnezia .vpn config to reach the Telorax server through a secure tunnel.</string>
+    <string name="setup_progress_title">SETUP PROGRESS</string>
+    <string name="setup_hint_vpn">Start by importing your Amnezia VPN profile and connecting the tunnel.</string>
+    <string name="setup_hint_server">VPN is ready. Save credentials and register with the Telorax server.</string>
+    <string name="setup_hint_telegram">Server connected. Enable accessibility and start the signup worker.</string>
+    <string name="setup_hint_done">All systems ready. Automatic signup can run in the background.</string>
+    <string name="status_title">Live status</string>
+    <string name="status_vpn_off">VPN disconnected</string>
+    <string name="status_vpn_on">VPN connected</string>
+    <string name="status_server_unknown">Server not connected</string>
+    <string name="status_server_ok">Server online</string>
+    <string name="status_telegram_unknown">Telegram checking…</string>
+    <string name="status_telegram_ready">Telegram automation ready</string>
+    <string name="status_telegram_missing">Telegram not installed</string>
+    <string name="status_profile_none">No Amnezia profile imported</string>
+    <string name="step_vpn_title">STEP 1 · VPN</string>
+    <string name="step_vpn_desc">Import your Amnezia .vpn config, connect the tunnel, then reach the internal Telorax API.</string>
     <string name="import_amnezia_file">Import .vpn file</string>
-    <string name="import_amnezia_clipboard">Paste from clipboard</string>
+    <string name="import_amnezia_clipboard">Paste config from clipboard</string>
     <string name="open_amnezia">Open Amnezia VPN</string>
-    <string name="step_server_title">STEP 2 · SERVER API</string>
+    <string name="step_server_title">STEP 2 · SERVER</string>
     <string name="public_url_hint">Public server URL (before VPN)</string>
     <string name="vpn_url_hint">Internal API URL (via VPN)</string>
     <string name="agent_id_hint">Agent ID</string>
     <string name="agent_token_hint">Agent token</string>
     <string name="save_settings">Save credentials</string>
     <string name="connect_server">Register &amp; sync</string>
-    <string name="step_telegram_title">STEP 3 · TELEGRAM SIGNUP</string>
-    <string name="open_accessibility">Enable accessibility service</string>
+    <string name="step_telegram_title">STEP 3 · TELEGRAM</string>
+    <string name="step_telegram_desc">Enable accessibility once, then the worker handles phone, SMS code, and profile automatically.</string>
+    <string name="open_accessibility">Open accessibility settings</string>
     <string name="open_telegram">Open Telegram</string>
-    <string name="start_provisioning">Start automatic signup worker</string>
-    <string name="stop_provisioning">Stop signup worker</string>
-    <string name="check_update">Check in-app update</string>
-    <string name="log_placeholder">Activity log…</string>
+    <string name="start_provisioning">Start automatic signup</string>
+    <string name="stop_provisioning">Stop automatic signup</string>
+    <string name="check_update">Check for update</string>
+    <string name="log_title">Activity log</string>
+    <string name="clear_log">Clear</string>
+    <string name="log_placeholder">Events will appear here…</string>
+    <string name="version_label">Version %1$s</string>
+    <string name="install_blocked_title">Install blocked?</string>
+    <string name="install_blocked_message">
+        If Google Play Protect warns about this app, tap More details → Install anyway.
+        Telorax Agent is signed with a dedicated release certificate and does not collect personal data.
+    </string>
 </resources>
